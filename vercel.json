@@ -12,20 +12,20 @@
   ],
   "routes": [
     {
-      "src": "/style.css",
-      "dest": "/public/style.css"
-    },
-    {
-      "src": "/(register|login|hospitals|doctors|my-appointments|book|update-payment|cancel-appointment|rebook-appointment)(.*)",
-      "dest": "/server/server.js"
+      "src": "/",
+      "dest": "/public/login.html"
     },
     {
       "src": "/(.*\\.html)",
       "dest": "/public/$1"
     },
     {
-      "src": "/",
-      "dest": "/public/login.html"
+      "src": "/(.*\\.(css|js|png|jpg|jpeg|gif|svg|ico|json|woff|woff2|ttf))",
+      "dest": "/public/$1"
+    },
+    {
+      "src": "/(register|login|hospitals|doctors|my-appointments|book|update-payment|cancel-appointment|rebook-appointment)(.*)",
+      "dest": "/server/server.js"
     },
     {
       "src": "/(.*)",

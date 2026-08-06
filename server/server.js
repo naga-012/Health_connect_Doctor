@@ -4,6 +4,7 @@ try { dns.setServers(['8.8.8.8', '8.8.4.4']); } catch(e) {}
 dns.setDefaultResultOrder('ipv4first');
 
 const express = require('express');
+const path = require('path');
 const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
 const cors = require('cors');
@@ -25,7 +26,7 @@ app.get('/', (req, res) => {
   res.redirect('/login.html');
 });
 
-app.use(express.static('public'));
+app.use(express.static(path.join(__dirname, '../public')));
 
 // MongoDB Atlas Connection URI
 const ATLAS_URI = "mongodb+srv://myakalanagarjun_db_user:l6Z0tIMvmLBKA5s2@health-connect-hub.ohz6rw2.mongodb.net/healthconnect?retryWrites=true&w=majority&appName=Health-Connect-Hub";
