@@ -1,0 +1,22 @@
+{
+  "name": "health-connect-hub",
+  "version": "1.0.0",
+  "description": "Health Connect Hub Backend and Frontend",
+  "main": "server/server.js",
+  "scripts": {
+    "start": "node server/server.js",
+    "dev": "node --watch server/server.js",
+    "seed": "node server/seed.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "bcrypt": "^5.1.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "mongoose": "^8.3.2",
+    "nodemailer": "^6.9.13"
+  }
+}

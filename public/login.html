@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - Health Connect Hub</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .auth-wrapper {
+      min-height: calc(100vh - 160px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem 1rem;
+      background: radial-gradient(circle at 50% 20%, #e0f2fe 0%, #f8fafc 75%);
+    }
+
+    .auth-card {
+      background: #ffffff;
+      border-radius: 24px;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.08), 0 10px 10px -5px rgba(0, 0, 0, 0.03);
+      border: 1px solid #e2e8f0;
+      width: 100%;
+      max-width: 440px;
+      padding: 2.75rem 2.25rem;
+      text-align: center;
+    }
+
+    .brand-icon {
+      width: 64px;
+      height: 64px;
+      background: linear-gradient(135deg, #2563eb 0%, #0284c7 100%);
+      color: #ffffff;
+      border-radius: 18px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      margin-bottom: 1.25rem;
+      box-shadow: 0 8px 16px -4px rgba(37, 99, 235, 0.3);
+    }
+
+    .demo-banner {
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: 14px;
+      padding: 0.875rem;
+      margin-bottom: 1.5rem;
+      font-size: 0.85rem;
+      color: #1e40af;
+      text-align: left;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .demo-btn {
+      background: #2563eb;
+      color: #ffffff;
+      border: none;
+      padding: 0.35rem 0.75rem;
+      border-radius: 8px;
+      font-size: 0.775rem;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: none;
+    }
+
+    .demo-btn:hover {
+      background: #1d4ed8;
+      transform: none;
+    }
+
+    .input-group {
+      text-align: left;
+      margin-bottom: 1.25rem;
+    }
+
+    .input-group label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #475569;
+      margin-bottom: 0.4rem;
+    }
+
+    .input-wrapper {
+      position: relative;
+    }
+
+    .input-wrapper input {
+      width: 100%;
+      padding: 0.875rem 1rem 0.875rem 2.6rem;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 12px;
+      font-size: 0.95rem;
+      outline: none;
+      transition: all 0.2s ease;
+      background: #f8fafc;
+    }
+
+    .input-wrapper input:focus {
+      background: #ffffff;
+      border-color: #2563eb;
+      box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
+    }
+
+    .input-icon {
+      position: absolute;
+      left: 0.9rem;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 1.1rem;
+      color: #94a3b8;
+    }
+
+    .auth-submit-btn {
+      width: 100%;
+      padding: 0.95rem;
+      font-size: 1rem;
+      font-weight: 700;
+      border-radius: 12px;
+      margin-top: 0.5rem;
+      background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+    }
+
+    .auth-submit-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(37, 99, 235, 0.35);
+    }
+  </style>
+</head>
+
+<body>
+
+<header>
+  <h1 class="heading">Health Connect Appointment Hub</h1>
+  <nav>
+    <a href="index.html">Home</a>
+    <a href="hospitals.html">Hospitals</a>
+    <a href="doctors.html">Doctors</a>
+    <a href="register.html">Register</a>
+    <a href="login.html">Login</a>
+  </nav>
+</header>
+
+<main class="auth-wrapper" style="flex-direction: column;">
+  <!-- 5-STEP APPOINTMENT BOOKING STEPPER -->
+  <div class="stepper-container">
+    <div class="stepper">
+      <div class="step-item active" onclick="location.href='/login.html'">
+        <div class="step-icon">1</div>
+        <div class="step-label">1. Login</div>
+      </div>
+      <div class="step-item" onclick="location.href='/hospitals.html'">
+        <div class="step-icon">2</div>
+        <div class="step-label">2. Select Hospital</div>
+      </div>
+      <div class="step-item" onclick="location.href='/doctors.html'">
+        <div class="step-icon">3</div>
+        <div class="step-label">3. Select Doctor</div>
+      </div>
+      <div class="step-item" onclick="location.href='/doctors.html'">
+        <div class="step-icon">4</div>
+        <div class="step-label">4. Select Timing</div>
+      </div>
+      <div class="step-item" onclick="location.href='/doctors.html'">
+        <div class="step-icon">5</div>
+        <div class="step-label">5. Payment & Verify</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="auth-card">
+    <div class="brand-icon">🏥</div>
+    <h1 style="font-size: 1.75rem; font-weight: 800; color: #0f172a; margin-bottom: 0.25rem;">Step 1: Sign In</h1>
+    <p style="color: #64748b; font-size: 0.9rem; margin-bottom: 1.5rem;">Sign in to proceed to hospital & doctor booking</p>
+
+    <!-- Quick Autofill Demo Banner -->
+    <div class="demo-banner">
+      <div>
+        <strong>💡 Demo Account</strong>
+        <div style="font-size: 0.775rem; color: #3b82f6;">myakalanagarjun09@gmail.com</div>
+      </div>
+      <button class="demo-btn" onclick="autofillDemo()">Auto-fill</button>
+    </div>
+
+    <form id="loginForm">
+      <div class="input-group">
+        <label for="emailInput">Email Address</label>
+        <div class="input-wrapper">
+          <span class="input-icon">✉️</span>
+          <input type="email" id="emailInput" name="email" placeholder="name@example.com" required>
+        </div>
+      </div>
+
+      <div class="input-group">
+        <label for="passwordInput">Password</label>
+        <div class="input-wrapper">
+          <span class="input-icon">🔒</span>
+          <input type="password" id="passwordInput" name="password" placeholder="••••••••" required>
+        </div>
+      </div>
+
+      <button type="submit" id="loginBtn" class="auth-submit-btn">Sign In to Account</button>
+    </form>
+
+    <div style="margin-top: 1.5rem; font-size: 0.9rem; color: #64748b;">
+      Don't have an account yet? <a href="register.html" style="color: #2563eb; font-weight: 700; text-decoration: none;">Register Now</a>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <p>© 2025 Health Connect Appointment Hub. All rights reserved.</p>
+  <p><a href="privacy.html">Privacy Policy</a> | <a href="terms.html">Terms of Service</a></p>
+</footer>
+
+<script>
+const form = document.getElementById("loginForm");
+const btn = document.getElementById("loginBtn");
+
+function autofillDemo() {
+  document.getElementById("emailInput").value = "myakalanagarjun09@gmail.com";
+  document.getElementById("passwordInput").value = "Password123!";
+}
+
+form.addEventListener("submit", async (e) => {
+  e.preventDefault();
+
+  const email = document.getElementById("emailInput").value.toLowerCase().trim();
+  const password = document.getElementById("passwordInput").value;
+
+  btn.disabled = true;
+  btn.innerText = "Authenticating...";
+
+  try {
+    const res = await fetch("/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password })
+    });
+
+    const text = await res.text();
+
+    if (!res.ok) {
+      alert("Login Failed: " + text);
+      btn.disabled = false;
+      btn.innerText = "Sign In to Account";
+      return;
+    }
+
+    const data = JSON.parse(text);
+
+    // Save session details
+    localStorage.setItem("userId", data.userId);
+    localStorage.setItem("name", data.name || "");
+    localStorage.setItem("email", data.email || "");
+
+    alert("Login Successful ✅");
+
+    // Redirect to Hospitals Directory
+    window.location.href = "/hospitals.html";
+
+  } catch (err) {
+    console.error("Login error:", err);
+    alert("Connection error. Please try again.");
+    btn.disabled = false;
+    btn.innerText = "Sign In to Account";
+  }
+});
+</script>
+
+</body>
+</html>

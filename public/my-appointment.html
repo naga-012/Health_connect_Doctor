@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Appointments - Health Connect Hub</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .appointment-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 16px;
+      padding: 1.5rem;
+      margin-bottom: 1.25rem;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+      text-align: left;
+      transition: all 0.2s ease;
+    }
+
+    .appointment-card:hover {
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08);
+    }
+
+    .badge-booked {
+      background: #dcfce7;
+      color: #15803d;
+      padding: 0.25rem 0.75rem;
+      border-radius: 20px;
+      font-weight: 700;
+      font-size: 0.85rem;
+    }
+
+    .badge-cancelled {
+      background: #fee2e2;
+      color: #b91c1c;
+      padding: 0.25rem 0.75rem;
+      border-radius: 20px;
+      font-weight: 700;
+      font-size: 0.85rem;
+    }
+
+    .badge-paid {
+      background: #e0f2fe;
+      color: #0369a1;
+      padding: 0.25rem 0.75rem;
+      border-radius: 20px;
+      font-weight: 700;
+      font-size: 0.85rem;
+    }
+
+    .badge-pending-pay {
+      background: #fef3c7;
+      color: #b45309;
+      padding: 0.25rem 0.75rem;
+      border-radius: 20px;
+      font-weight: 700;
+      font-size: 0.85rem;
+    }
+
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(15, 23, 42, 0.65);
+      backdrop-filter: blur(4px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 1rem;
+    }
+
+    .payment-card {
+      background: #ffffff;
+      border-radius: 20px;
+      padding: 2rem;
+      max-width: 460px;
+      width: 100%;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+      text-align: center;
+      border: 1px solid #e2e8f0;
+    }
+
+    .qr-container {
+      background: #f8fafc;
+      border: 2px dashed #cbd5e1;
+      border-radius: 16px;
+      padding: 1.25rem;
+      margin: 1.25rem 0;
+      display: inline-block;
+    }
+
+    .qr-container img {
+      max-width: 200px;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+
+<body>
+
+<header>
+  <h1 class="heading">Health Connect Appointment Hub</h1>
+  <nav>
+    <a href="index.html">Home</a>
+    <a href="hospitals.html">Hospitals</a>
+    <a href="doctors.html">Doctors</a>
+    <a href="my-appointment.html">My Appointments</a>
+    <a href="login.html">Login</a>
+  </nav>
+</header>
+
+<main>
+  <div class="container">
+    <h1>My Booked Appointments</h1>
+    <p style="color: var(--text-muted); margin-bottom: 1.5rem;">View and manage your upcoming doctor consultations and payment statuses.</p>
+
+    <div class="buttons" style="margin-bottom: 2rem;">
+      <button onclick="setFilter('all')" id="tab-all" style="background: var(--primary);">All</button>
+      <button onclick="setFilter('booked')" id="tab-booked" style="background: #64748b;">Active</button>
+      <button onclick="setFilter('cancelled')" id="tab-cancelled" style="background: #64748b;">Cancelled</button>
+    </div>
+
+    <div id="appointmentsList">
+      <p style="color: var(--text-muted);">Loading your appointments...</p>
+    </div>
+
+    <div class="buttons" style="margin-top: 2rem;">
+      <button onclick="location.href='/doctors.html'">+ Book New Appointment</button>
+    </div>
+  </div>
+</main>
+
+<!-- UPI PAYMENT MODAL -->
+<div id="paymentModal" class="modal-overlay">
+  <div class="payment-card">
+    <h2 style="font-size: 1.5rem; color: #0f172a; font-weight: 800; margin-bottom: 0.25rem;">Complete Payment</h2>
+    <p style="color: #64748b; font-size: 0.9rem;">Scan QR code with GPay, PhonePe, or Paytm</p>
+
+    <div style="background: #f1f5f9; border-radius: 12px; padding: 1rem; margin-top: 1rem; text-align: left; font-size: 0.9rem;">
+      <p>👨‍⚕️ <strong>Doctor:</strong> <span id="modalDoctorName">Dr. Name</span></p>
+      <p>🗓️ <strong>Slot:</strong> <span id="modalSlot">Date & Time</span></p>
+    </div>
+
+    <div class="qr-container">
+      <img id="qrImage" src="" alt="Payment QR Code">
+      <p style="font-size: 0.8rem; color: #475569; margin-top: 0.5rem;"><strong>Scan with GPay, PhonePe, or Paytm</strong><br>UPI ID: 9121792433@upi</p>
+    </div>
+
+    <div style="display: flex; gap: 0.75rem; justify-content: center;">
+      <button onclick="markPaymentPaid()" style="background-color: var(--success); flex: 1;">
+        ✅ Complete Payment (Mark Paid)
+      </button>
+      <button onclick="closePaymentModal()" style="background-color: #64748b; width: auto;">
+        Close
+      </button>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <p>© 2025 Health Connect Appointment Hub. All rights reserved.</p>
+  <p><a href="privacy.html">Privacy Policy</a> | <a href="terms.html">Terms of Service</a></p>
+</footer>
+
+<script>
+let allAppointments = [];
+let currentFilter = "all";
+let activePayAppointmentId = "";
+
+if (!localStorage.getItem("userId")) {
+  alert("Please log in to view your appointments");
+  window.location.href = "/login.html";
+}
+
+async function loadAppointments() {
+  const container = document.getElementById("appointmentsList");
+  container.innerHTML = "<p style='color: var(--text-muted);'>Loading appointments from server...</p>";
+
+  try {
+    const userId = localStorage.getItem("userId");
+    const res = await fetch(`/my-appointments/${userId}`);
+    allAppointments = await res.json();
+
+    renderAppointments();
+  } catch (err) {
+    console.error(err);
+    container.innerHTML = "<p style='color: var(--danger);'>Error loading appointments from server.</p>";
+  }
+}
+
+function setFilter(filter) {
+  currentFilter = filter;
+
+  document.querySelectorAll(".buttons button").forEach(btn => {
+    if (btn.id.startsWith("tab-")) {
+      btn.style.background = "#64748b";
+    }
+  });
+
+  const activeBtn = document.getElementById(`tab-${filter}`);
+  if (activeBtn) activeBtn.style.background = "var(--primary)";
+
+  renderAppointments();
+}
+
+function renderAppointments() {
+  const container = document.getElementById("appointmentsList");
+  container.innerHTML = "";
+
+  let filtered = allAppointments;
+  if (currentFilter !== "all") {
+    filtered = allAppointments.filter(app => (app.status || "booked") === currentFilter);
+  }
+
+  if (!filtered || filtered.length === 0) {
+    container.innerHTML = "<div class='appointment-card'><p style='text-align:center;'>No appointments found.</p></div>";
+    return;
+  }
+
+  filtered.forEach(app => {
+    const status = app.status || "booked";
+    const paymentStatus = app.paymentStatus || "pending";
+    const doctorName = app.doctorId ? (app.doctorId.name || "Doctor") : "Doctor";
+    const specialty = app.doctorId ? (app.doctorId.specialty || "") : "";
+    const txnId = app.paymentTransactionId || "";
+    const paymentMethod = app.paymentMethod || "UPI";
+
+    const card = document.createElement("div");
+    card.className = "appointment-card";
+
+    card.innerHTML = `
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 0.5rem;">
+        <div>
+          <h3>👨‍⚕️ ${doctorName}</h3>
+          ${specialty ? `<p style="color: var(--accent); font-weight: 600; font-size: 0.9rem;">🩺 ${specialty}</p>` : ''}
+          <p style="margin-top: 0.5rem; font-size: 0.95rem;">🗓️ <strong>Slot:</strong> ${app.slot}</p>
+          ${txnId ? `<p style="margin-top: 0.25rem; font-size: 0.85rem; color: #475569;">🧾 <strong>Txn ID:</strong> <span style="font-family: monospace; color: #2563eb;">${txnId}</span> (${paymentMethod})</p>` : ''}
+        </div>
+        <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 0.4rem;">
+          <span class="${status === 'cancelled' ? 'badge-cancelled' : 'badge-booked'}">
+            ${status === 'cancelled' ? '❌ Cancelled' : '✅ Verified Booking'}
+          </span>
+          ${status !== 'cancelled' ? `
+            <span class="${paymentStatus === 'paid' ? 'badge-paid' : 'badge-pending-pay'}">
+              ${paymentStatus === 'paid' ? '💳 Payment Verified' : '⏳ Pending Payment'}
+            </span>
+          ` : ''}
+        </div>
+      </div>
+
+      <div style="margin-top: 1.25rem; display: flex; gap: 0.75rem; flex-wrap: wrap;">
+        ${status === 'booked' ? `
+          ${paymentStatus !== 'paid' ? `
+            <button onclick="openPayModal('${app._id}', '${escapeQuotes(doctorName)}', '${escapeQuotes(app.slot)}')" style="background-color: var(--success); padding: 0.5rem 1rem; font-size: 0.875rem;">
+              💳 Pay via QR Code
+            </button>
+          ` : ''}
+          <button class="cancel-btn" onclick="cancelAppointment('${app._id}')" style="padding: 0.5rem 1rem; font-size: 0.875rem;">
+            Cancel Appointment
+          </button>
+        ` : `
+          <button onclick="rebookAppointment('${app._id}')" style="background-color: var(--primary); padding: 0.5rem 1rem; font-size: 0.875rem;">
+            🔄 Re-book Appointment
+          </button>
+        `}
+      </div>
+    `;
+
+    container.appendChild(card);
+  });
+}
+
+function escapeQuotes(str) {
+  return str.replace(/'/g, "\\'");
+}
+
+function openPayModal(appointmentId, doctorName, slot) {
+  activePayAppointmentId = appointmentId;
+
+  document.getElementById("modalDoctorName").innerText = doctorName;
+  document.getElementById("modalSlot").innerText = slot;
+
+  const upiString = `upi://pay?pa=9121792433@upi&pn=HealthConnectHub&am=500&cu=INR&tn=Appointment-${encodeURIComponent(doctorName)}`;
+  const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(upiString)}`;
+  document.getElementById("qrImage").src = qrApiUrl;
+
+  document.getElementById("paymentModal").style.display = "flex";
+}
+
+function closePaymentModal() {
+  document.getElementById("paymentModal").style.display = "none";
+}
+
+async function markPaymentPaid() {
+  if (!activePayAppointmentId) return;
+
+  try {
+    const res = await fetch('/update-payment', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ appointmentId: activePayAppointmentId, paymentStatus: 'paid' })
+    });
+
+    const data = await res.json();
+    alert("Payment status updated to Paid! ✅");
+    closePaymentModal();
+    await loadAppointments();
+  } catch (err) {
+    console.error(err);
+    alert("Error updating payment status");
+  }
+}
+
+async function cancelAppointment(id) {
+  if (!confirm("Are you sure you want to cancel this appointment?")) return;
+
+  try {
+    const res = await fetch(`/cancel-appointment/${id}`, {
+      method: "DELETE"
+    });
+
+    const data = await res.json();
+    alert(data.message || "Cancelled successfully");
+    await loadAppointments();
+
+  } catch (err) {
+    console.error(err);
+    alert("Error cancelling appointment");
+  }
+}
+
+async function rebookAppointment(id) {
+  try {
+    const res = await fetch(`/rebook-appointment/${id}`, {
+      method: "POST"
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      alert(data.error || "Re-booking failed");
+      return;
+    }
+
+    alert(data.message || "Appointment re-booked successfully! ✅");
+    await loadAppointments();
+
+  } catch (err) {
+    console.error("Error rebooking appointment:", err);
+    alert("Error re-booking appointment");
+  }
+}
+
+loadAppointments();
+</script>
+
+</body>
+</html>
