@@ -21,9 +21,9 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Directly open the login page when accessing http://localhost:3000/
+// Serve main live appointments feed portal on root URL
 app.get('/', (req, res) => {
-  res.redirect('/login.html');
+  res.sendFile(path.join(__dirname, '../public/index.html'));
 });
 
 app.use(express.static(path.join(__dirname, '../public')));

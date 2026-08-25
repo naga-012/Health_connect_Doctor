@@ -1,77 +1,418 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Health Connect Appointment Hub</title>
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HealthConnect Hub | Live Appointment Booking Feed</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f4f7f6;
+      margin: 0;
+      padding: 0;
+    }
+    .top-header {
+      background: #0d1b2a;
+      color: white;
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    .brand-logo {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-size: 1.35rem;
+      font-weight: 700;
+    }
+    .brand-badge {
+      background: #00b4d8;
+      color: white;
+      width: 38px;
+      height: 38px;
+      border-radius: 8px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+    }
+    .nav-links {
+      display: flex;
+      gap: 1.25rem;
+      align-items: center;
+    }
+    .nav-links a {
+      color: #e0e1dd;
+      text-decoration: none;
+      font-weight: 500;
+      font-size: 0.95rem;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover, .nav-links a.active {
+      color: #00b4d8;
+    }
+    .live-bar {
+      background: #004b23;
+      color: #b7efc5;
+      padding: 0.45rem 2rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+      text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+    .live-dot {
+      width: 9px;
+      height: 9px;
+      background: #38b000;
+      border-radius: 50%;
+      box-shadow: 0 0 8px #38b000;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 2rem auto;
+      padding: 0 1.5rem;
+    }
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1.25rem;
+      margin-bottom: 2rem;
+    }
+    .metric-card {
+      background: white;
+      padding: 1.25rem;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+      border-left: 4px solid #007bff;
+    }
+    .metric-card .title {
+      font-size: 0.8rem;
+      color: #6c757d;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .metric-card .val {
+      font-size: 1.8rem;
+      font-weight: 800;
+      color: #212529;
+      margin-top: 0.25rem;
+    }
+    .feed-card {
+      background: white;
+      border-radius: 12px;
+      padding: 1.25rem;
+      margin-bottom: 1rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+      border: 1px solid #e9ecef;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+    .feed-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+    .patient-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: #0d1b2a;
+    }
+    .feed-meta {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 0.75rem;
+      background: #f8f9fa;
+      padding: 0.85rem;
+      border-radius: 8px;
+      font-size: 0.88rem;
+    }
+    .badge {
+      padding: 0.3rem 0.7rem;
+      border-radius: 50px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    .badge-booked { background: #cff4fc; color: #055160; }
+    .badge-completed { background: #d1e7dd; color: #0f5132; }
+    .badge-cancelled { background: #f8d7da; color: #842029; }
+    .btn-action {
+      padding: 0.45rem 0.9rem;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 0.85rem;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-complete { background: #198754; color: white; }
+    .btn-complete:hover { background: #157347; }
+    .btn-cancel { background: #dc3545; color: white; }
+    .btn-cancel:hover { background: #bb2d3b; }
+    .search-input {
+      padding: 0.6rem 1rem;
+      border-radius: 8px;
+      border: 1.5px solid #ced4da;
+      outline: none;
+      font-size: 0.9rem;
+      width: 250px;
+    }
+    .search-input:focus {
+      border-color: #00b4d8;
+    }
+  </style>
 </head>
 <body>
 
-<header>
-    <h1 class="heading">Health Connect Appointment Hub</h1>
-    <nav>
-        <a href="register.html">Register</a>
-        <a href="login.html">Login</a>
-        <a href="helps.html">Help</a>
-        <a href="contact.html">Contact</a>
-        <a href="ambulance.html">Ambulance Services</a>
-    </nav>
-</header>
+  <!-- Top Navigation Header -->
+  <header class="top-header">
+    <div class="brand-logo">
+      <span class="brand-badge">H+</span>
+      HealthConnect <span style="color: #00b4d8;">Hub</span>
+    </div>
 
-<main>
-  <div class="container">
-    <h1>Welcome to Health Connect Appointment Hub</h1>
-    <div class="search">
-      <input type="text" id="search" placeholder="Search hospitals...">
-      <button onclick="searchHospitals()">Search</button> <!-- Added search button -->
-    </div>
-    <div class="buttons">
-      <button onclick="location.href='/hospitals.html'">View Hospitals</button>
-      <button onclick="location.href='/doctors.html'">Book Appointment</button>
-      <button id="logoutBtn" onclick="logout()">Logout</button>
-    </div>
+    <nav class="nav-links">
+      <a href="/" class="active">⚡ Live Appointments Feed</a>
+      <a href="doctors.html">🩺 Book Appointment</a>
+      <a href="hospitals.html">🏥 Hospitals</a>
+      <a href="my-appointment.html">📋 My Bookings</a>
+      <a href="login.html" id="loginLink">Login</a>
+      <a href="register.html">Register</a>
+    </nav>
+  </header>
+
+  <!-- Live Status Bar -->
+  <div class="live-bar">
+    <span class="live-dot"></span>
+    Live Patient Appointments Feed (Who Are Booking Appointments) • Auto-refreshing every 5s
   </div>
 
+  <!-- Main Content Area -->
+  <main class="container">
+
+    <!-- Page Header & Filters -->
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem;">
+      <div>
+        <h1 style="font-size: 1.8rem; font-weight: 800; color: #0d1b2a; margin: 0 0 0.3rem 0;">Who Are Booking Appointments</h1>
+        <p style="color: #6c757d; font-size: 0.95rem; margin: 0;">Real-time feed showing active patient bookings, doctor details, PhonePe/UPI UTR reference numbers, and slot status.</p>
+      </div>
+
+      <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+        <input type="text" id="patientSearchInput" class="search-input" placeholder="Search patient or UTR..." oninput="renderFilteredFeed()">
+        
+        <select id="doctorSelectFilter" onchange="fetchFeed()" style="padding: 0.6rem 1rem; border-radius: 8px; border: 1.5px solid #ced4da; font-weight: 600; outline: none; background: white;">
+          <option value="all">⚡ All Doctors Feed</option>
+          <option value="d1">Dr. Anil Reddy (Orthopedics)</option>
+          <option value="d2">Dr. Priya Sharma (Pediatrics)</option>
+          <option value="d3">Dr. Sanjay Patel (Cardiology)</option>
+          <option value="d4">Dr. Ravi Kumar (Neurology)</option>
+          <option value="d5">Dr. Sunitha Rao (Dermatology)</option>
+          <option value="d6">Dr. Vikram Varma (General Medicine)</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Quick Metrics Counters -->
+    <div class="metrics-grid">
+      <div class="metric-card" style="border-left-color: #0d1b2a;">
+        <div class="title">Total Bookings</div>
+        <div class="val" id="metricTotal">0</div>
+      </div>
+      <div class="metric-card" style="border-left-color: #007bff;">
+        <div class="title">Active Booked</div>
+        <div class="val" id="metricBooked" style="color: #007bff;">0</div>
+      </div>
+      <div class="metric-card" style="border-left-color: #198754;">
+        <div class="title">Completed</div>
+        <div class="val" id="metricCompleted" style="color: #198754;">0</div>
+      </div>
+      <div class="metric-card" style="border-left-color: #dc3545;">
+        <div class="title">Cancelled</div>
+        <div class="val" id="metricCancelled" style="color: #dc3545;">0</div>
+      </div>
+      <div class="metric-card" style="border-left-color: #0d9488;">
+        <div class="title">Revenue (Est.)</div>
+        <div class="val" id="metricRevenue" style="color: #0d9488;">₹0</div>
+      </div>
+    </div>
+
+    <!-- Appointments Feed Box -->
+    <div style="background: white; border-radius: 12px; padding: 1.5rem; box-shadow: 0 4px 16px rgba(0,0,0,0.06); border: 1px solid #e9ecef;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; border-bottom: 1px solid #e9ecef; padding-bottom: 0.75rem;">
+        <h3 style="font-size: 1.2rem; font-weight: 700; color: #1a252c; margin: 0;">Live Booked Appointments</h3>
+        <span style="font-size: 0.8rem; color: #6c757d;" id="syncLabel">Last synced: --</span>
+      </div>
+
+      <div id="feedContainer">
+        <div style="text-align: center; padding: 3rem; color: #6c757d;">Loading live appointments feed...</div>
+      </div>
+    </div>
+
+  </main>
+
+  <footer style="background: #0d1b2a; color: #8d99ae; padding: 1.5rem; text-align: center; font-size: 0.85rem; margin-top: 3rem;">
+    <p>© 2026 HealthConnect Hub. All rights reserved. Real-time Slot & UTR Verification Portal.</p>
+  </footer>
+
   <script>
-    // Show/hide logout button based on login status
-    const logoutBtn = document.getElementById('logoutBtn');
-    if (localStorage.getItem('userId')) {
-      logoutBtn.style.display = 'block';
-    } else {
-      logoutBtn.style.display = 'none';
-    }
+    let rawFeed = [];
 
-    function logout() {
-      localStorage.removeItem('userId');
-      alert('You have been logged out.');
-      window.location.href = '/login.html';
-    }
-
-    // Search hospitals and redirect to hospitals.html
-    function searchHospitals() {
-      const searchTerm = document.getElementById('search').value.trim();
-      if (searchTerm) {
-        window.location.href = `/hospitals.html?search=${encodeURIComponent(searchTerm)}`;
-      } else {
-        window.location.href = '/hospitals.html';
+    document.addEventListener('DOMContentLoaded', () => {
+      // Login status check
+      if (localStorage.getItem('userId')) {
+        const loginLink = document.getElementById('loginLink');
+        if (loginLink) {
+          loginLink.textContent = 'Logout';
+          loginLink.href = '#';
+          loginLink.onclick = () => {
+            localStorage.removeItem('userId');
+            window.location.reload();
+          };
+        }
       }
-    }
 
-    // Allow Enter key to trigger search
-    document.getElementById('search').addEventListener('keypress', function (e) {
-      if (e.key === 'Enter') {
-        searchHospitals();
-      }
+      fetchFeed();
+      setInterval(fetchFeed, 5000); // Auto sync every 5s
     });
+
+    async function fetchFeed() {
+      const select = document.getElementById('doctorSelectFilter');
+      const docId = select ? select.value : 'all';
+
+      try {
+        const res = await fetch(`/doctor-appointments?doctorId=${docId}`);
+        rawFeed = await res.json();
+
+        document.getElementById('syncLabel').textContent = `Last synced: ${new Date().toLocaleTimeString()}`;
+        updateMetrics(rawFeed);
+        renderFilteredFeed();
+      } catch (err) {
+        console.error('Error fetching appointments feed:', err);
+      }
+    }
+
+    function updateMetrics(list) {
+      const total = list.length;
+      const booked = list.filter(a => a.status === 'booked').length;
+      const completed = list.filter(a => a.status === 'completed').length;
+      const cancelled = list.filter(a => a.status === 'cancelled').length;
+
+      const revenue = list
+        .filter(a => a.status !== 'cancelled')
+        .reduce((sum, a) => sum + (a.doctorId?.consultationFee || 800), 0);
+
+      document.getElementById('metricTotal').textContent = total;
+      document.getElementById('metricBooked').textContent = booked;
+      document.getElementById('metricCompleted').textContent = completed;
+      document.getElementById('metricCancelled').textContent = cancelled;
+      document.getElementById('metricRevenue').textContent = `₹${revenue}`;
+    }
+
+    function renderFilteredFeed() {
+      const container = document.getElementById('feedContainer');
+      if (!container) return;
+
+      const query = (document.getElementById('patientSearchInput')?.value || '').toLowerCase().trim();
+
+      let list = [...rawFeed];
+      if (query) {
+        list = list.filter(a => {
+          const userName = (a.userId?.name || a.userName || '').toLowerCase();
+          const userEmail = (a.userId?.email || a.userEmail || '').toLowerCase();
+          const utr = (a.paymentTransactionId || '').toLowerCase();
+          const docName = (a.doctorId?.name || a.doctorName || '').toLowerCase();
+          return userName.includes(query) || userEmail.includes(query) || utr.includes(query) || docName.includes(query);
+        });
+      }
+
+      if (list.length === 0) {
+        container.innerHTML = '<div style="text-align: center; padding: 3rem; color: #6c757d;">No appointment bookings match your search query.</div>';
+        return;
+      }
+
+      container.innerHTML = list.map(a => {
+        const docName = a.doctorId?.name || a.doctorName || 'Dr. Doctor';
+        const docSpec = a.doctorId?.specialty || a.specialty || 'Specialist';
+        const userName = a.userId?.name || a.userName || 'Nagarjun Myakala';
+        const userContact = a.userId?.email || a.userEmail || 'myakalanagarjun09@gmail.com';
+        const utr = a.paymentTransactionId || 'UTR-N/A';
+
+        const statusBadge = a.status === 'completed'
+          ? '<span class="badge badge-completed">✓ Completed</span>'
+          : a.status === 'cancelled'
+          ? '<span class="badge badge-cancelled">✕ Cancelled</span>'
+          : '<span class="badge badge-booked">● Active Booked</span>';
+
+        const actionsHtml = a.status === 'booked' ? `
+          <div style="display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 0.5rem; border-top: 1px dashed #dee2e6; padding-top: 0.5rem;">
+            <button class="btn-action btn-complete" onclick="changeStatus('${a._id}', 'completed')">✓ Mark Completed</button>
+            <button class="btn-action btn-cancel" onclick="changeStatus('${a._id}', 'cancelled')">✕ Cancel & Release Slot</button>
+          </div>
+        ` : '';
+
+        return `
+          <div class="feed-card" style="border-left: 4px solid ${a.status === 'completed' ? '#198754' : a.status === 'cancelled' ? '#dc3545' : '#007bff'};">
+            <div class="feed-header">
+              <div>
+                <div class="patient-title">Patient: ${userName}</div>
+                <div style="font-size: 0.85rem; color: #6c757d;">Contact: ${userContact}</div>
+              </div>
+              <div>${statusBadge}</div>
+            </div>
+
+            <div class="feed-meta">
+              <div>
+                <span style="color: #6c757d; display: block; font-size: 0.75rem; font-weight: 700;">BOOKED DOCTOR</span>
+                <strong>👨‍⚕️ ${docName} (${docSpec})</strong>
+              </div>
+              <div>
+                <span style="color: #6c757d; display: block; font-size: 0.75rem; font-weight: 700;">BOOKED SLOT</span>
+                <strong>🗓️ ${a.slot || 'Scheduled Slot'}</strong>
+              </div>
+              <div>
+                <span style="color: #6c757d; display: block; font-size: 0.75rem; font-weight: 700;">UPI PAYMENT</span>
+                <strong style="color: #198754;">Paid ₹${a.doctorId?.consultationFee || 800} (${a.paymentMethod || 'UPI QR'})</strong>
+              </div>
+              <div>
+                <span style="color: #6c757d; display: block; font-size: 0.75rem; font-weight: 700;">UTR REFERENCE NO.</span>
+                <span style="font-family: monospace; font-weight: 700; background: #e0f2fe; color: #0369a1; padding: 0.1rem 0.4rem; border-radius: 4px;">${utr}</span>
+              </div>
+            </div>
+
+            ${actionsHtml}
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function changeStatus(id, newStatus) {
+      if (newStatus === 'cancelled' && !confirm('Are you sure you want to cancel this appointment booking? This will automatically release the slot.')) {
+        return;
+      }
+
+      try {
+        const res = await fetch(`/appointment-status/${id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: newStatus })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          fetchFeed();
+        } else {
+          alert(data.error || 'Failed to update appointment status.');
+        }
+      } catch (err) {
+        alert('Network error updating status.');
+      }
+    }
   </script>
-</main>
-
-<footer>
-    <p>© 2025 Health Connect Appointment Hub. All rights reserved.</p>
-    <p class="#link"><a href="privacy.html">Privacy Policy</a> |
-       <a href="terms.html">Terms of Service</a></p>
-</footer>
-
 </body>
 </html>
