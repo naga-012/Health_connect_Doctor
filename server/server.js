@@ -367,6 +367,103 @@ app.get("/my-appointments/:userId", async (req, res) => {
 });
 
 
+// ================= DOCTOR DASHBOARD APPOINTMENTS FEED =================
+app.get("/doctor-appointments", async (req, res) => {
+  try {
+    const doctorId = req.query.doctorId;
+    
+    if (isMongoConnected) {
+      try {
+        let filter = {};
+        if (doctorId && doctorId !== 'all') {
+          filter.doctorId = doctorId;
+        }
+        const appointments = await Appointment.find(filter)
+          .populate('doctorId', 'name specialty consultationFee')
+          .populate('userId', 'name email phone')
+          .sort({ createdAt: -1 });
+        return res.json(appointments);
+      } catch (e) {
+        console.warn("Mongo doctor appointments query failed, using memory store:", e.message);
+      }
+    }
+
+    // Memory store fallback
+    let list = [...memoryAppointments];
+    if (doctorId && doctorId !== 'all') {
+      list = list.filter(a => String(a.doctorId?._id || a.doctorId) === String(doctorId));
+    }
+    list.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+    res.json(list);
+  } catch (err) {
+    console.error("Error fetching doctor appointments feed:", err);
+    res.json(memoryAppointments);
+  }
+});
+
+// ================= UPDATE APPOINTMENT STATUS (ACCEPT / COMPLETE / CANCEL & FREE SLOT) =================
+app.patch("/appointment-status/:id", async (req, res) => {
+  try {
+    const id = req.params.id;
+    const { status } = req.body;
+
+    if (!['booked', 'completed', 'cancelled'].includes(status)) {
+      return res.status(400).json({ error: "Invalid status" });
+    }
+
+    if (isMongoConnected) {
+      try {
+        const appointment = await Appointment.findById(id);
+        if (appointment) {
+          appointment.status = status;
+          await appointment.save();
+
+          // If cancelled, free doctor slot
+          if (status === 'cancelled' && appointment.slot) {
+            const doctor = await Doctor.findById(appointment.doctorId);
+            if (doctor) {
+              const parts = appointment.slot.split(" ");
+              const date = parts[0];
+              const time = parts.slice(1).join(" ");
+              const slot = doctor.slots.find(s => s.date === date && s.time === time);
+              if (slot) {
+                slot.available = true;
+                await doctor.save();
+              }
+            }
+          }
+          return res.json({ message: `Appointment status updated to ${status} ✅`, appointment });
+        }
+      } catch (e) {
+        console.warn("Mongo update status failed:", e.message);
+      }
+    }
+
+    // Memory store fallback
+    const appMem = memoryAppointments.find(a => String(a._id) === String(id));
+    if (appMem) {
+      appMem.status = status;
+      if (status === 'cancelled' && appMem.slot) {
+        const docId = appMem.doctorId?._id || appMem.doctorId;
+        const memDoctor = memoryDoctors.find(d => String(d._id) === String(docId));
+        if (memDoctor) {
+          const parts = appMem.slot.split(" ");
+          const date = parts[0];
+          const time = parts.slice(1).join(" ");
+          const slot = memDoctor.slots.find(s => s.date === date && s.time === time);
+          if (slot) slot.available = true;
+        }
+      }
+      return res.json({ message: `Appointment status updated to ${status} ✅`, appointment: appMem });
+    }
+
+    res.status(404).json({ error: "Appointment not found" });
+  } catch (err) {
+    console.error("Error updating status:", err);
+    res.status(500).json({ error: "Failed to update appointment status" });
+  }
+});
+
 // Used UTR Tracker (Prevents reusing the same UTR multiple times)
 const usedUtrNumbers = new Set();
 
