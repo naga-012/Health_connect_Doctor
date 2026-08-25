@@ -214,7 +214,7 @@ app.post("/register", async (req, res) => {
 });
 
 
-// ================= LOGIN =================
+// ================= DOCTOR ONLY LOGIN =================
 app.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -224,13 +224,24 @@ app.post("/login", async (req, res) => {
 
     const cleanEmail = email.toLowerCase().trim();
 
+    // DOCTOR AUTHORIZATION CHECK: Only Doctors & Hospital Admins permitted
+    const isDoctorEmail = cleanEmail === "myakalanagarjun09@gmail.com" ||
+      cleanEmail.includes("doctor") || cleanEmail.includes("doc") || cleanEmail.includes("dr.") ||
+      cleanEmail.endsWith("@apollo.com") || cleanEmail.endsWith("@rainbow.com") ||
+      cleanEmail.endsWith("@kims.com") || cleanEmail.endsWith("@nims.com") ||
+      cleanEmail.endsWith("@hospital.com") || cleanEmail.endsWith("@healthconnect.com");
+
+    if (!isDoctorEmail) {
+      return res.status(403).send("❌ Access Denied: Only certified Doctors and Hospital Administrators are permitted to log in to this portal.");
+    }
+
     if (isMongoConnected) {
       try {
         const user = await User.findOne({ email: cleanEmail });
         if (user) {
           const match = await bcrypt.compare(password, user.password);
           if (match) {
-            return res.json({ userId: user._id, name: user.name, email: user.email });
+            return res.json({ userId: user._id, name: user.name, email: user.email, role: 'doctor' });
           }
         }
       } catch (e) {
@@ -245,27 +256,28 @@ app.post("/login", async (req, res) => {
     }
 
     if (!memUser) {
-      // Auto-create user for seamless demo login if password provided
+      // Auto-create Doctor account for demo login if password provided
       memUser = {
-        _id: "demo_user_" + Date.now(),
-        name: cleanEmail.split('@')[0],
+        _id: "doc_user_" + Date.now(),
+        name: "Dr. " + cleanEmail.split('@')[0],
         email: cleanEmail,
-        passwordHash: await bcrypt.hash(password, 10)
+        passwordHash: await bcrypt.hash(password, 10),
+        role: "doctor"
       };
       memoryUsers.push(memUser);
-      return res.json({ userId: memUser._id, name: memUser.name, email: memUser.email });
+      return res.json({ userId: memUser._id, name: memUser.name, email: memUser.email, role: 'doctor' });
     }
 
     const match = await bcrypt.compare(password, memUser.passwordHash || "");
     if (!match && password !== "Password123!") {
-      return res.status(401).send("Invalid Password");
+      return res.status(401).send("Invalid Password Credentials");
     }
 
-    res.json({ userId: memUser._id, name: memUser.name, email: memUser.email });
+    res.json({ userId: memUser._id, name: memUser.name, email: memUser.email, role: 'doctor' });
 
   } catch (err) {
     console.error("Login Error:", err);
-    res.status(500).send("Server Error");
+    res.status(500).send("Server Error during Doctor Login");
   }
 });
 
