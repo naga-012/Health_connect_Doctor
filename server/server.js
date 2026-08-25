@@ -379,7 +379,7 @@ app.get("/doctor-appointments", async (req, res) => {
           filter.doctorId = doctorId;
         }
         const appointments = await Appointment.find(filter)
-          .populate('doctorId', 'name specialty consultationFee')
+          .populate('doctorId', 'name specialty consultationFee hospitals')
           .populate('userId', 'name email phone')
           .sort({ createdAt: -1 });
         return res.json(appointments);
@@ -552,7 +552,8 @@ app.post("/book", async (req, res) => {
     const newAppointment = {
       _id: "app_" + Date.now(),
       userId,
-      doctorId: { _id: memDoctor._id, name: memDoctor.name, specialty: memDoctor.specialty },
+      doctorId: { _id: memDoctor._id, name: memDoctor.name, specialty: memDoctor.specialty, hospitals: memDoctor.hospitals, consultationFee: memDoctor.consultationFee },
+      hospitalName: memDoctor.hospitals ? memDoctor.hospitals[0] : "Apollo Hospital",
       slot: `${date} ${time}`,
       status: "booked",
       paymentStatus: paymentStatus || "paid",

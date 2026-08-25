@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>HealthConnect Hub | Live Appointment Booking Feed</title>
+  <title>HealthConnect Hub | Hospital-Wise Booking Details</title>
   <link rel="stylesheet" href="style.css">
   <style>
     body {
@@ -74,7 +74,7 @@
       box-shadow: 0 0 8px #38b000;
     }
     .container {
-      max-width: 1200px;
+      max-width: 1240px;
       margin: 2rem auto;
       padding: 0 1.5rem;
     }
@@ -102,6 +102,27 @@
       font-weight: 800;
       color: #212529;
       margin-top: 0.25rem;
+    }
+    .hospital-summary-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+    .hosp-summary-card {
+      background: white;
+      border-radius: 10px;
+      padding: 1rem 1.25rem;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+    }
+    .hosp-name-title {
+      font-weight: 700;
+      font-size: 1rem;
+      color: #0d1b2a;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
     }
     .feed-card {
       background: white;
@@ -156,16 +177,14 @@
     .btn-complete:hover { background: #157347; }
     .btn-cancel { background: #dc3545; color: white; }
     .btn-cancel:hover { background: #bb2d3b; }
-    .search-input {
-      padding: 0.6rem 1rem;
+    .select-input {
+      padding: 0.65rem 1rem;
       border-radius: 8px;
       border: 1.5px solid #ced4da;
+      font-weight: 600;
       outline: none;
+      background: white;
       font-size: 0.9rem;
-      width: 250px;
-    }
-    .search-input:focus {
-      border-color: #00b4d8;
     }
   </style>
 </head>
@@ -179,9 +198,9 @@
     </div>
 
     <nav class="nav-links">
-      <a href="/" class="active">⚡ Live Appointments Feed</a>
+      <a href="/" class="active">🏥 Hospital-Wise Booking Details</a>
+      <a href="hospitals.html">🏥 Hospitals Directory</a>
       <a href="doctors.html">🩺 Book Appointment</a>
-      <a href="hospitals.html">🏥 Hospitals</a>
       <a href="my-appointment.html">📋 My Bookings</a>
       <a href="login.html" id="loginLink">Login</a>
       <a href="register.html">Register</a>
@@ -191,24 +210,36 @@
   <!-- Live Status Bar -->
   <div class="live-bar">
     <span class="live-dot"></span>
-    Live Patient Appointments Feed (Who Are Booking Appointments) • Auto-refreshing every 5s
+    Hospital-Wise Appointment Details Engine • Auto-refreshing live sync every 5s
   </div>
 
   <!-- Main Content Area -->
   <main class="container">
 
-    <!-- Page Header & Filters -->
+    <!-- Page Title & Filters -->
     <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem;">
       <div>
-        <h1 style="font-size: 1.8rem; font-weight: 800; color: #0d1b2a; margin: 0 0 0.3rem 0;">Who Are Booking Appointments</h1>
-        <p style="color: #6c757d; font-size: 0.95rem; margin: 0;">Real-time feed showing active patient bookings, doctor details, PhonePe/UPI UTR reference numbers, and slot status.</p>
+        <h1 style="font-size: 1.8rem; font-weight: 800; color: #0d1b2a; margin: 0 0 0.3rem 0;">Hospital-Wise Booking Details</h1>
+        <p style="color: #6c757d; font-size: 0.95rem; margin: 0;">View detailed patient booking records, doctor assignments, UPI payment UTR references, and statuses organized by hospital.</p>
       </div>
 
       <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
-        <input type="text" id="patientSearchInput" class="search-input" placeholder="Search patient or UTR..." oninput="renderFilteredFeed()">
-        
-        <select id="doctorSelectFilter" onchange="fetchFeed()" style="padding: 0.6rem 1rem; border-radius: 8px; border: 1.5px solid #ced4da; font-weight: 600; outline: none; background: white;">
-          <option value="all">⚡ All Doctors Feed</option>
+        <!-- Hospital Filter Dropdown -->
+        <select id="hospitalFilterSelect" class="select-input" onchange="renderFilteredFeed()">
+          <option value="all">🏥 All Hospitals</option>
+          <option value="Apollo Hospital">Apollo Hospital</option>
+          <option value="Rainbow Children's Hospital">Rainbow Children's Hospital</option>
+          <option value="KIMS Hospital">KIMS Hospital</option>
+          <option value="NIMS Hospital">NIMS Hospital</option>
+          <option value="Sunshine Hospital">Sunshine Hospital</option>
+          <option value="City Hospital">City Hospital</option>
+          <option value="One Care Hospital">One Care Hospital</option>
+          <option value="Gandhi Hospital">Gandhi Hospital</option>
+        </select>
+
+        <!-- Doctor Filter Dropdown -->
+        <select id="doctorFilterSelect" class="select-input" onchange="renderFilteredFeed()">
+          <option value="all">🩺 All Doctors</option>
           <option value="d1">Dr. Anil Reddy (Orthopedics)</option>
           <option value="d2">Dr. Priya Sharma (Pediatrics)</option>
           <option value="d3">Dr. Sanjay Patel (Cardiology)</option>
@@ -219,7 +250,7 @@
       </div>
     </div>
 
-    <!-- Quick Metrics Counters -->
+    <!-- Overall System Metrics -->
     <div class="metrics-grid">
       <div class="metric-card" style="border-left-color: #0d1b2a;">
         <div class="title">Total Bookings</div>
@@ -238,34 +269,52 @@
         <div class="val" id="metricCancelled" style="color: #dc3545;">0</div>
       </div>
       <div class="metric-card" style="border-left-color: #0d9488;">
-        <div class="title">Revenue (Est.)</div>
+        <div class="title">Total Revenue</div>
         <div class="val" id="metricRevenue" style="color: #0d9488;">₹0</div>
       </div>
     </div>
 
-    <!-- Appointments Feed Box -->
+    <!-- Hospital-Wise Summary Breakdown Cards -->
+    <div style="margin-bottom: 1.5rem;">
+      <h3 style="font-size: 1.15rem; font-weight: 700; color: #0d1b2a; margin-bottom: 0.75rem;">🏥 Hospital Summary Overview</h3>
+      <div class="hospital-summary-row" id="hospitalSummaryGrid">
+        <!-- Dynamic hospital breakdown cards -->
+      </div>
+    </div>
+
+    <!-- Detailed Booked Appointments Feed Box -->
     <div style="background: white; border-radius: 12px; padding: 1.5rem; box-shadow: 0 4px 16px rgba(0,0,0,0.06); border: 1px solid #e9ecef;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; border-bottom: 1px solid #e9ecef; padding-bottom: 0.75rem;">
-        <h3 style="font-size: 1.2rem; font-weight: 700; color: #1a252c; margin: 0;">Live Booked Appointments</h3>
+        <h3 style="font-size: 1.2rem; font-weight: 700; color: #1a252c; margin: 0;">Detailed Booking Records</h3>
         <span style="font-size: 0.8rem; color: #6c757d;" id="syncLabel">Last synced: --</span>
       </div>
 
       <div id="feedContainer">
-        <div style="text-align: center; padding: 3rem; color: #6c757d;">Loading live appointments feed...</div>
+        <div style="text-align: center; padding: 3rem; color: #6c757d;">Loading hospital-wise booking details...</div>
       </div>
     </div>
 
   </main>
 
   <footer style="background: #0d1b2a; color: #8d99ae; padding: 1.5rem; text-align: center; font-size: 0.85rem; margin-top: 3rem;">
-    <p>© 2026 HealthConnect Hub. All rights reserved. Real-time Slot & UTR Verification Portal.</p>
+    <p>© 2026 HealthConnect Hub. All rights reserved. Hospital-Wise Booking Details Engine.</p>
   </footer>
 
   <script>
     let rawFeed = [];
+    const allHospitalsList = [
+      "Apollo Hospital",
+      "Rainbow Children's Hospital",
+      "KIMS Hospital",
+      "NIMS Hospital",
+      "Sunshine Hospital",
+      "City Hospital",
+      "One Care Hospital",
+      "Gandhi Hospital"
+    ];
 
     document.addEventListener('DOMContentLoaded', () => {
-      // Login status check
+      // Check login status
       if (localStorage.getItem('userId')) {
         const loginLink = document.getElementById('loginLink');
         if (loginLink) {
@@ -279,22 +328,20 @@
       }
 
       fetchFeed();
-      setInterval(fetchFeed, 5000); // Auto sync every 5s
+      setInterval(fetchFeed, 5000); // Auto-poll every 5 seconds
     });
 
     async function fetchFeed() {
-      const select = document.getElementById('doctorSelectFilter');
-      const docId = select ? select.value : 'all';
-
       try {
-        const res = await fetch(`/doctor-appointments?doctorId=${docId}`);
+        const res = await fetch('/doctor-appointments?doctorId=all');
         rawFeed = await res.json();
 
         document.getElementById('syncLabel').textContent = `Last synced: ${new Date().toLocaleTimeString()}`;
         updateMetrics(rawFeed);
+        renderHospitalSummary(rawFeed);
         renderFilteredFeed();
       } catch (err) {
-        console.error('Error fetching appointments feed:', err);
+        console.error('Error fetching hospital booking feed:', err);
       }
     }
 
@@ -315,29 +362,64 @@
       document.getElementById('metricRevenue').textContent = `₹${revenue}`;
     }
 
+    // Helper: Determine hospital name for an appointment
+    function getHospitalForAppt(a) {
+      if (a.hospitalName) return a.hospitalName;
+      if (a.doctorId && Array.isArray(a.doctorId.hospitals) && a.doctorId.hospitals.length > 0) {
+        return a.doctorId.hospitals[0];
+      }
+      return "Apollo Hospital"; // default fallback
+    }
+
+    function renderHospitalSummary(list) {
+      const grid = document.getElementById('hospitalSummaryGrid');
+      if (!grid) return;
+
+      grid.innerHTML = allHospitalsList.map(hospName => {
+        const hospAppts = list.filter(a => getHospitalForAppt(a) === hospName);
+        const activeCount = hospAppts.filter(a => a.status === 'booked').length;
+        const totalCount = hospAppts.length;
+        const revenue = hospAppts.filter(a => a.status !== 'cancelled').reduce((sum, a) => sum + (a.doctorId?.consultationFee || 800), 0);
+
+        return `
+          <div class="hosp-summary-card">
+            <div class="hosp-name-title">📍 ${hospName}</div>
+            <div style="display: flex; justify-content: space-between; margin-top: 0.5rem; font-size: 0.85rem; color: #495057;">
+              <span>Active Bookings: <strong style="color: #007bff;">${activeCount}</strong></span>
+              <span>Total: <strong>${totalCount}</strong></span>
+            </div>
+            <div style="margin-top: 0.3rem; font-size: 0.85rem; font-weight: 700; color: #0d9488;">
+              Revenue: ₹${revenue}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
     function renderFilteredFeed() {
       const container = document.getElementById('feedContainer');
       if (!container) return;
 
-      const query = (document.getElementById('patientSearchInput')?.value || '').toLowerCase().trim();
+      const selectedHosp = document.getElementById('hospitalFilterSelect')?.value || 'all';
+      const selectedDoc = document.getElementById('doctorFilterSelect')?.value || 'all';
 
       let list = [...rawFeed];
-      if (query) {
-        list = list.filter(a => {
-          const userName = (a.userId?.name || a.userName || '').toLowerCase();
-          const userEmail = (a.userId?.email || a.userEmail || '').toLowerCase();
-          const utr = (a.paymentTransactionId || '').toLowerCase();
-          const docName = (a.doctorId?.name || a.doctorName || '').toLowerCase();
-          return userName.includes(query) || userEmail.includes(query) || utr.includes(query) || docName.includes(query);
-        });
+
+      if (selectedHosp !== 'all') {
+        list = list.filter(a => getHospitalForAppt(a) === selectedHosp);
+      }
+
+      if (selectedDoc !== 'all') {
+        list = list.filter(a => String(a.doctorId?._id || a.doctorId) === String(selectedDoc));
       }
 
       if (list.length === 0) {
-        container.innerHTML = '<div style="text-align: center; padding: 3rem; color: #6c757d;">No appointment bookings match your search query.</div>';
+        container.innerHTML = `<div style="text-align: center; padding: 3rem; color: #6c757d;">No booking records found for the selected hospital or doctor filters.</div>`;
         return;
       }
 
       container.innerHTML = list.map(a => {
+        const hospName = getHospitalForAppt(a);
         const docName = a.doctorId?.name || a.doctorName || 'Dr. Doctor';
         const docSpec = a.doctorId?.specialty || a.specialty || 'Specialist';
         const userName = a.userId?.name || a.userName || 'Nagarjun Myakala';
@@ -361,23 +443,24 @@
           <div class="feed-card" style="border-left: 4px solid ${a.status === 'completed' ? '#198754' : a.status === 'cancelled' ? '#dc3545' : '#007bff'};">
             <div class="feed-header">
               <div>
+                <div style="color: #00b4d8; font-weight: 700; font-size: 0.88rem; margin-bottom: 0.2rem;">📍 HOSPITAL: ${hospName.toUpperCase()}</div>
                 <div class="patient-title">Patient: ${userName}</div>
-                <div style="font-size: 0.85rem; color: #6c757d;">Contact: ${userContact}</div>
+                <div style="font-size: 0.85rem; color: #6c757d;">Contact Email/Phone: ${userContact}</div>
               </div>
               <div>${statusBadge}</div>
             </div>
 
             <div class="feed-meta">
               <div>
-                <span style="color: #6c757d; display: block; font-size: 0.75rem; font-weight: 700;">BOOKED DOCTOR</span>
+                <span style="color: #6c757d; display: block; font-size: 0.75rem; font-weight: 700;">ASSIGNED DOCTOR</span>
                 <strong>👨‍⚕️ ${docName} (${docSpec})</strong>
               </div>
               <div>
-                <span style="color: #6c757d; display: block; font-size: 0.75rem; font-weight: 700;">BOOKED SLOT</span>
+                <span style="color: #6c757d; display: block; font-size: 0.75rem; font-weight: 700;">APPOINTMENT SLOT</span>
                 <strong>🗓️ ${a.slot || 'Scheduled Slot'}</strong>
               </div>
               <div>
-                <span style="color: #6c757d; display: block; font-size: 0.75rem; font-weight: 700;">UPI PAYMENT</span>
+                <span style="color: #6c757d; display: block; font-size: 0.75rem; font-weight: 700;">UPI PAYMENT DETAILS</span>
                 <strong style="color: #198754;">Paid ₹${a.doctorId?.consultationFee || 800} (${a.paymentMethod || 'UPI QR'})</strong>
               </div>
               <div>
@@ -393,7 +476,7 @@
     }
 
     async function changeStatus(id, newStatus) {
-      if (newStatus === 'cancelled' && !confirm('Are you sure you want to cancel this appointment booking? This will automatically release the slot.')) {
+      if (newStatus === 'cancelled' && !confirm('Are you sure you want to cancel this booking? This will automatically release the slot for other patients.')) {
         return;
       }
 
@@ -407,7 +490,7 @@
         if (res.ok) {
           fetchFeed();
         } else {
-          alert(data.error || 'Failed to update appointment status.');
+          alert(data.error || 'Failed to update status.');
         }
       } catch (err) {
         alert('Network error updating status.');
