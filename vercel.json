@@ -13,7 +13,7 @@
   "routes": [
     {
       "src": "/",
-      "dest": "/public/login.html"
+      "dest": "/public/index.html"
     },
     {
       "src": "/(.*\\.html)",
@@ -24,7 +24,7 @@
       "dest": "/public/$1"
     },
     {
-      "src": "/(register|login|hospitals|doctors|my-appointments|book|update-payment|cancel-appointment|rebook-appointment)(.*)",
+      "src": "/(register|login|hospitals|doctors|doctor-appointments|appointment-status|my-appointments|book|update-payment|cancel-appointment|rebook-appointment)(.*)",
       "dest": "/server/server.js"
     },
     {
