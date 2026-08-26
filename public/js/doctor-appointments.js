@@ -1,78 +1,44 @@
-const BACKEND_URL = window.location.origin.startsWith('http') ? window.location.origin : 'http://localhost:3000';
+const BACKEND_URL = 'http://localhost:3000';
 
-// 1. Fetch live appointments from shared database
-async function loadIncomingAppointments() {
+async function loadDoctorAppointments() {
   try {
-    const response = await fetch(`${BACKEND_URL}/api/doctor/appointments`);
-    const appointments = await response.json();
-    renderDoctorTable(appointments);
-  } catch (error) {
-    console.error("Failed to load doctor appointments:", error);
-  }
-}
+    const res = await fetch(`${BACKEND_URL}/api/doctor/appointments`);
+    const appointments = await res.json();
+    
+    const tableBody = document.getElementById('appointments-table-body') || document.getElementById('doctor-appointment-table-body');
+    if (!tableBody) return;
 
-// 2. Render appointments into the doctor table
-function renderDoctorTable(appointments) {
-  const tableBody = document.getElementById('doctor-appointment-table-body');
-  if (!tableBody) return;
+    if (!appointments || appointments.length === 0) {
+      tableBody.innerHTML = '<tr><td colspan="5" style="text-align:center;">No patient bookings found.</td></tr>';
+      return;
+    }
 
-  if (!appointments || appointments.length === 0) {
-    tableBody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding: 20px;">No patient bookings found.</td></tr>`;
-    return;
-  }
-
-  tableBody.innerHTML = appointments.map(app => {
-    const patientName = app.userId?.name || "Patient";
-    const patientEmail = app.userId?.email || "N/A";
-    const patientPhone = app.userId?.phone || "N/A";
-    const doctorName = app.doctorId?.name || "Assigned Doctor";
-    const slot = app.slot || "N/A";
-    const utr = app.paymentTransactionId || "N/A";
-    const status = app.status || "booked";
-
-    return `
+    tableBody.innerHTML = appointments.map(app => `
       <tr>
+        <td><strong>${app.userId?.name || 'Patient'}</strong><br><small>${app.userId?.phone || ''}</small></td>
+        <td>${app.doctorId?.name || 'Doctor'} (${app.doctorId?.specialty || ''})</td>
+        <td>${app.slot || 'N/A'}</td>
+        <td><span class="badge">${app.status || 'booked'}</span></td>
         <td>
-          <strong>${patientName}</strong><br>
-          <small style="color: #64748b;">${patientEmail} | ${patientPhone}</small>
-        </td>
-        <td>${doctorName}</td>
-        <td><strong>${slot}</strong></td>
-        <td>
-          <span style="color: #16a34a; font-weight: 600;">PAID</span><br>
-          <small style="color: #64748b;">${utr}</small>
-        </td>
-        <td><span class="status-badge ${status}">${status}</span></td>
-        <td>
-          ${status === 'booked' ? `
-            <button class="btn btn-done" onclick="updateAppointmentStatus('${app._id}', 'completed')">Done</button>
-            <button class="btn btn-cancel" onclick="updateAppointmentStatus('${app._id}', 'cancelled')">Cancel</button>
-          ` : `<small style="color:#94a3b8;">No actions</small>`}
+          <button onclick="updateStatus('${app._id}', 'completed')">Done</button>
+          <button onclick="updateStatus('${app._id}', 'cancelled')">Cancel</button>
         </td>
       </tr>
-    `;
-  }).join('');
-}
-
-// 3. Update appointment status (Mark completed or cancel)
-async function updateAppointmentStatus(appointmentId, newStatus) {
-  try {
-    const res = await fetch(`${BACKEND_URL}/api/doctor/appointments/${appointmentId}/status`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: newStatus })
-    });
-    
-    if (res.ok) {
-      loadIncomingAppointments();
-    } else {
-      alert("Failed to update status");
-    }
+    `).join('');
   } catch (err) {
-    console.error("Status update error:", err);
+    console.error("Error loading doctor appointments:", err);
   }
 }
 
-// Initial load + poll every 5 seconds
-loadIncomingAppointments();
-setInterval(loadIncomingAppointments, 5000);
+async function updateStatus(id, newStatus) {
+  await fetch(`${BACKEND_URL}/api/doctor/appointments/${id}/status`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ status: newStatus })
+  });
+  loadDoctorAppointments();
+}
+
+// Initial fetch + auto-sync every 5 seconds
+loadDoctorAppointments();
+setInterval(loadDoctorAppointments, 5000);
