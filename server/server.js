@@ -1,6 +1,6 @@
 require('dotenv').config();
 const dns = require('dns');
-try { dns.setServers(['8.8.8.8', '8.8.4.4']); } catch(e) {}
+try { dns.setServers(['8.8.8.8', '8.8.4.4']); } catch (e) { }
 dns.setDefaultResultOrder('ipv4first');
 
 const express = require('express');
@@ -30,7 +30,7 @@ app.use(express.static(path.join(__dirname, '../public')));
 
 // MongoDB Atlas Connection URI
 const ATLAS_URI = "mongodb+srv://myakalanagarjun_db_user:l6Z0tIMvmLBKA5s2@health-connect-hub.ohz6rw2.mongodb.net/healthconnect?retryWrites=true&w=majority&appName=Health-Connect-Hub";
-const MONGO_URI = process.env.MONGO_URI || ATLAS_URI;
+const MONGO_URI = process.env.MONGODB_URI || process.env.MONGO_URI || ATLAS_URI;
 
 let isMongoConnected = false;
 
@@ -383,20 +383,26 @@ app.get("/my-appointments/:userId", async (req, res) => {
 app.get(["/api/doctor/appointments", "/doctor-appointments"], async (req, res) => {
   try {
     if (isMongoConnected) {
-      const appointments = await Appointment.find()
-        .populate('userId', 'name email phone')
-        .populate('doctorId', 'name specialty consultationFee hospitals')
-        .sort({ createdAt: -1 });
-      return res.json(appointments);
+      try {
+        const appointments = await Appointment.find()
+          .populate('userId', 'name email phone')
+          .populate('doctorId', 'name specialty consultationFee hospitals')
+          .sort({ createdAt: -1 });
+        if (appointments && appointments.length > 0) {
+          return res.json(appointments);
+        }
+      } catch (e) {
+        console.warn("Mongo appointments query failed:", e.message);
+      }
     }
 
     // In-memory fallback
     const enriched = memoryAppointments.map(a => {
-      const patient = memoryUsers.find(u => String(u._id) === String(a.userId)) || {
+      const patient = typeof a.userId === 'object' ? a.userId : (memoryUsers.find(u => String(u._id) === String(a.userId)) || {
         name: "Patient",
         email: "N/A",
         phone: "N/A"
-      };
+      });
       return { ...a, userId: patient };
     });
     res.json(enriched);
@@ -461,7 +467,7 @@ app.post("/book", async (req, res) => {
             usedUtrNumbers.add(cleanUtr);
             return res.status(400).json({ error: `❌ Payment Verification Failed: UTR ${cleanUtr} has ALREADY been used for a previous appointment booking!` });
           }
-        } catch (e) {}
+        } catch (e) { }
       }
 
       // Mark UTR as verified & used
