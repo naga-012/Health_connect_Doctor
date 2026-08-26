@@ -1,6 +1,6 @@
 const BACKEND_URL = window.location.origin.startsWith('http') ? window.location.origin : 'http://localhost:3000';
 
-// 1. Fetch appointments from the database
+// Fetch all patient appointments from the backend database
 async function loadDoctorAppointments() {
   try {
     const response = await fetch(`${BACKEND_URL}/api/doctor/appointments`);
@@ -11,9 +11,8 @@ async function loadDoctorAppointments() {
   }
 }
 
-// 2. Display appointments in the table
+// Render rows into the table
 function renderAppointmentsTable(appointments) {
-  // Looks for a tbody with id="appointments-table-body" or the first table body on your page
   let tbody = document.getElementById('appointments-table-body');
   if (!tbody) {
     tbody = document.querySelector('table tbody');
@@ -44,7 +43,7 @@ function renderAppointmentsTable(appointments) {
         <td>
           ${status === 'booked' ? `
             <button onclick="changeStatus('${app._id}', 'completed')" style="background:#16a34a; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer;">Done</button>
-            <button onclick="changeStatus('${app._id}', 'cancelled')" style="background:#dc2626; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer;">Cancel</button>
+            <button onclick="changeStatus('${app._id}', 'cancelled')" style="background:#dc2626; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; margin-left:4px;">Cancel</button>
           ` : `<small style="color:#94a3b8">Updated</small>`}
         </td>
       </tr>
@@ -52,7 +51,7 @@ function renderAppointmentsTable(appointments) {
   }).join('');
 }
 
-// 3. Mark appointment complete or cancelled
+// Update status
 async function changeStatus(appointmentId, newStatus) {
   try {
     await fetch(`${BACKEND_URL}/api/doctor/appointments/${appointmentId}/status`, {
@@ -60,13 +59,13 @@ async function changeStatus(appointmentId, newStatus) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status: newStatus })
     });
-    loadDoctorAppointments(); // Reload table after update
+    loadDoctorAppointments();
   } catch (err) {
     alert("Error updating appointment status");
   }
 }
 
-// Fetch immediately on page load
+// Load immediately on open
 loadDoctorAppointments();
 
 // Auto-sync every 5 seconds so new patient bookings appear live
