@@ -488,3 +488,50 @@
       font-size: 0.8rem;
     }
   }
+
+  /* Doctor Appointment Table Styles */
+  .doctor-appointment-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+  }
+  .doctor-appointment-table th,
+  .doctor-appointment-table td {
+    padding: 0.85rem 1rem;
+    text-align: left;
+    border-bottom: 1px solid #e2e8f0;
+    font-size: 0.9rem;
+  }
+  .doctor-appointment-table th {
+    background-color: #f8fafc;
+    font-weight: 700;
+    color: #475569;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+  }
+  .status-badge {
+    display: inline-block;
+    padding: 0.25rem 0.65rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+  .status-badge.booked { background: #e0f2fe; color: #0369a1; }
+  .status-badge.completed { background: #dcfce7; color: #15803d; }
+  .status-badge.cancelled { background: #fee2e2; color: #b91c1c; }
+  .btn {
+    padding: 0.4rem 0.85rem;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-right: 0.35rem;
+  }
+  .btn-done { background: #16a34a; color: white; }
+  .btn-done:hover { background: #15803d; }
+  .btn-cancel { background: #dc2626; color: white; }
+  .btn-cancel:hover { background: #b91c1c; }

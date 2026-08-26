@@ -163,18 +163,34 @@
     </div>
 
     <!-- Live Feed Box -->
-    <div style="background: white; border-radius: 12px; padding: 1.5rem; box-shadow: 0 4px 16px rgba(0,0,0,0.06); border: 1px solid #e9ecef;">
+    <div style="background: white; border-radius: 12px; padding: 1.5rem; box-shadow: 0 4px 16px rgba(0,0,0,0.06); border: 1px solid #e9ecef; overflow-x: auto;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid #e9ecef; padding-bottom: 0.75rem;">
         <h3 style="font-size: 1.2rem; font-weight: 700; color: #1a252c;">Incoming Appointments</h3>
         <span style="font-size: 0.8rem; color: #6c757d;" id="syncTime">Last synced: --</span>
       </div>
 
-      <div id="feedList">
-        <div style="text-align: center; padding: 3rem; color: #6c757d;">Loading real-time appointment bookings...</div>
-      </div>
+      <table class="doctor-appointment-table">
+        <thead>
+          <tr>
+            <th>Patient Info</th>
+            <th>Doctor</th>
+            <th>Slot</th>
+            <th>Payment / UTR</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="doctor-appointment-table-body">
+          <tr><td colspan="6" style="text-align:center; padding: 20px;">Loading patient bookings...</td></tr>
+        </tbody>
+      </table>
+
+      <div id="feedList" style="display: none;"></div>
     </div>
 
   </main>
+
+  <script src="js/doctor-appointments.js"></script>
 
   <script>
     let currentFeed = [];

@@ -380,7 +380,7 @@ app.get("/my-appointments/:userId", async (req, res) => {
 
 
 // ================= DOCTOR DASHBOARD APPOINTMENTS FEED =================
-app.get("/doctor-appointments", async (req, res) => {
+app.get(["/api/doctor/appointments", "/doctor-appointments"], async (req, res) => {
   try {
     const doctorId = req.query.doctorId;
     
@@ -414,7 +414,7 @@ app.get("/doctor-appointments", async (req, res) => {
 });
 
 // ================= UPDATE APPOINTMENT STATUS (ACCEPT / COMPLETE / CANCEL & FREE SLOT) =================
-app.patch("/appointment-status/:id", async (req, res) => {
+app.patch(["/api/doctor/appointments/:id/status", "/appointment-status/:id"], async (req, res) => {
   try {
     const id = req.params.id;
     const { status } = req.body;
@@ -425,11 +425,8 @@ app.patch("/appointment-status/:id", async (req, res) => {
 
     if (isMongoConnected) {
       try {
-        const appointment = await Appointment.findById(id);
+        const appointment = await Appointment.findByIdAndUpdate(id, { status }, { new: true });
         if (appointment) {
-          appointment.status = status;
-          await appointment.save();
-
           // If cancelled, free doctor slot
           if (status === 'cancelled' && appointment.slot) {
             const doctor = await Doctor.findById(appointment.doctorId);
@@ -444,7 +441,7 @@ app.patch("/appointment-status/:id", async (req, res) => {
               }
             }
           }
-          return res.json({ message: `Appointment status updated to ${status} ✅`, appointment });
+          return res.json(appointment);
         }
       } catch (e) {
         console.warn("Mongo update status failed:", e.message);
@@ -466,13 +463,13 @@ app.patch("/appointment-status/:id", async (req, res) => {
           if (slot) slot.available = true;
         }
       }
-      return res.json({ message: `Appointment status updated to ${status} ✅`, appointment: appMem });
+      return res.json(appMem);
     }
 
     res.status(404).json({ error: "Appointment not found" });
   } catch (err) {
     console.error("Error updating status:", err);
-    res.status(500).json({ error: "Failed to update appointment status" });
+    res.status(500).json({ error: "Failed to update status" });
   }
 });
 
