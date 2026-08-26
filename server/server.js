@@ -700,7 +700,7 @@ app.post("/rebook-appointment/:id", async (req, res) => {
 
 
 // ================= SERVER LISTEN & VERCEL EXPORT =================
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3001;
 if (require.main === module) {
   app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);

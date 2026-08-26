@@ -1,4 +1,4 @@
-const BACKEND_URL = window.location.origin.startsWith('http') ? window.location.origin : 'http://localhost:3000';
+const BACKEND_URL = window.location.origin.startsWith('http') ? window.location.origin : 'http://localhost:3001';
 
 // Fetch all patient appointments from the backend database
 async function loadDoctorAppointments() {

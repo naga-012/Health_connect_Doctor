@@ -43,7 +43,7 @@ cd "new health connect hub"
 ### Step 2: Configure Environment Variables (`.env`)
 Create or verify the `.env` file in the root directory with the following variables:
 ```env
-PORT=3000
+PORT=3001
 MONGO_URI=mongodb+srv://myakalanagarjun_db_user:l6Z0tIMvmLBKA5s2@health-connect-hub.ohz6rw2.mongodb.net/healthconnect?retryWrites=true&w=majority&appName=Health-Connect-Hub
 
 EMAIL_USER=myakalanagarjun09@gmail.com
@@ -75,7 +75,7 @@ npm run dev
 
 ### Step 6: Access Frontend in Web Browser
 Open your browser and navigate to:
-👉 **[http://localhost:3000](http://localhost:3000)**
+👉 **[http://localhost:3001](http://localhost:3001)**
 
 ---
 
