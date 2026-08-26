@@ -379,96 +379,52 @@ app.get("/my-appointments/:userId", async (req, res) => {
 });
 
 
-// ================= DOCTOR DASHBOARD APPOINTMENTS FEED =================
+// ================= DOCTOR SITE API: GET ALL APPOINTMENTS =================
 app.get(["/api/doctor/appointments", "/doctor-appointments"], async (req, res) => {
   try {
-    const doctorId = req.query.doctorId;
-    
     if (isMongoConnected) {
-      try {
-        let filter = {};
-        if (doctorId && doctorId !== 'all') {
-          filter.doctorId = doctorId;
-        }
-        const appointments = await Appointment.find(filter)
-          .populate('doctorId', 'name specialty consultationFee hospitals')
-          .populate('userId', 'name email phone')
-          .sort({ createdAt: -1 });
-        return res.json(appointments);
-      } catch (e) {
-        console.warn("Mongo doctor appointments query failed, using memory store:", e.message);
-      }
+      const appointments = await Appointment.find()
+        .populate('userId', 'name email phone')
+        .populate('doctorId', 'name specialty consultationFee hospitals')
+        .sort({ createdAt: -1 });
+      return res.json(appointments);
     }
 
-    // Memory store fallback
-    let list = [...memoryAppointments];
-    if (doctorId && doctorId !== 'all') {
-      list = list.filter(a => String(a.doctorId?._id || a.doctorId) === String(doctorId));
-    }
-    list.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
-    res.json(list);
+    // In-memory fallback
+    const enriched = memoryAppointments.map(a => {
+      const patient = memoryUsers.find(u => String(u._id) === String(a.userId)) || {
+        name: "Patient",
+        email: "N/A",
+        phone: "N/A"
+      };
+      return { ...a, userId: patient };
+    });
+    res.json(enriched);
   } catch (err) {
-    console.error("Error fetching doctor appointments feed:", err);
-    res.json(memoryAppointments);
+    console.error("Error fetching doctor appointments:", err);
+    res.status(500).json({ error: "Failed to fetch appointments" });
   }
 });
 
-// ================= UPDATE APPOINTMENT STATUS (ACCEPT / COMPLETE / CANCEL & FREE SLOT) =================
+// Update appointment status (Done / Cancel)
 app.patch(["/api/doctor/appointments/:id/status", "/appointment-status/:id"], async (req, res) => {
   try {
-    const id = req.params.id;
+    const { id } = req.params;
     const { status } = req.body;
 
-    if (!['booked', 'completed', 'cancelled'].includes(status)) {
-      return res.status(400).json({ error: "Invalid status" });
+    if (isMongoConnected && mongoose.Types.ObjectId.isValid(id)) {
+      const updated = await Appointment.findByIdAndUpdate(id, { status }, { new: true });
+      return res.json(updated);
     }
 
-    if (isMongoConnected) {
-      try {
-        const appointment = await Appointment.findByIdAndUpdate(id, { status }, { new: true });
-        if (appointment) {
-          // If cancelled, free doctor slot
-          if (status === 'cancelled' && appointment.slot) {
-            const doctor = await Doctor.findById(appointment.doctorId);
-            if (doctor) {
-              const parts = appointment.slot.split(" ");
-              const date = parts[0];
-              const time = parts.slice(1).join(" ");
-              const slot = doctor.slots.find(s => s.date === date && s.time === time);
-              if (slot) {
-                slot.available = true;
-                await doctor.save();
-              }
-            }
-          }
-          return res.json(appointment);
-        }
-      } catch (e) {
-        console.warn("Mongo update status failed:", e.message);
-      }
-    }
-
-    // Memory store fallback
     const appMem = memoryAppointments.find(a => String(a._id) === String(id));
     if (appMem) {
       appMem.status = status;
-      if (status === 'cancelled' && appMem.slot) {
-        const docId = appMem.doctorId?._id || appMem.doctorId;
-        const memDoctor = memoryDoctors.find(d => String(d._id) === String(docId));
-        if (memDoctor) {
-          const parts = appMem.slot.split(" ");
-          const date = parts[0];
-          const time = parts.slice(1).join(" ");
-          const slot = memDoctor.slots.find(s => s.date === date && s.time === time);
-          if (slot) slot.available = true;
-        }
-      }
       return res.json(appMem);
     }
 
     res.status(404).json({ error: "Appointment not found" });
   } catch (err) {
-    console.error("Error updating status:", err);
     res.status(500).json({ error: "Failed to update status" });
   }
 });
