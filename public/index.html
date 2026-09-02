@@ -245,24 +245,40 @@
           <option value="d5">Dr. Sunitha Rao (Dermatology)</option>
           <option value="d6">Dr. Vikram Varma (General Medicine)</option>
         </select>
+
+        <!-- Status Filter Dropdown (Completed / Not Completed / Cancelled) -->
+        <select id="statusFilterSelect" class="select-input" onchange="renderFilteredFeed()">
+          <option value="all">⚡ All Statuses</option>
+          <option value="booked">⏳ Not Completed (Active)</option>
+          <option value="completed">✓ Completed Appointments</option>
+          <option value="cancelled">✕ Cancelled Appointments</option>
+        </select>
       </div>
     </div>
 
-    <!-- Overall System Metrics -->
+    <!-- Quick Status Filter Tabs -->
+    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1.5rem;">
+      <button onclick="setStatusFilter('all')" id="btn-status-all" style="padding: 0.5rem 1.1rem; border-radius: 20px; font-weight: 700; border: none; cursor: pointer; background: #0d1b2a; color: white;">⚡ All Bookings</button>
+      <button onclick="setStatusFilter('booked')" id="btn-status-booked" style="padding: 0.5rem 1.1rem; border-radius: 20px; font-weight: 700; border: none; cursor: pointer; background: #e0f2fe; color: #0369a1;">⏳ Not Completed (Active)</button>
+      <button onclick="setStatusFilter('completed')" id="btn-status-completed" style="padding: 0.5rem 1.1rem; border-radius: 20px; font-weight: 700; border: none; cursor: pointer; background: #d1e7dd; color: #0f5132;">✓ Completed Appointments</button>
+      <button onclick="setStatusFilter('cancelled')" id="btn-status-cancelled" style="padding: 0.5rem 1.1rem; border-radius: 20px; font-weight: 700; border: none; cursor: pointer; background: #f8d7da; color: #842029;">✕ Cancelled Appointments</button>
+    </div>
+
+    <!-- Overall System Metrics (Clickable Filters) -->
     <div class="metrics-grid">
-      <div class="metric-card" style="border-left-color: #0d1b2a;">
+      <div class="metric-card" style="border-left-color: #0d1b2a; cursor: pointer;" onclick="setStatusFilter('all')">
         <div class="title">Total Bookings</div>
         <div class="val" id="metricTotal">0</div>
       </div>
-      <div class="metric-card" style="border-left-color: #007bff;">
-        <div class="title">Active Booked</div>
+      <div class="metric-card" style="border-left-color: #007bff; cursor: pointer;" onclick="setStatusFilter('booked')">
+        <div class="title">Not Completed (Active)</div>
         <div class="val" id="metricBooked" style="color: #007bff;">0</div>
       </div>
-      <div class="metric-card" style="border-left-color: #198754;">
+      <div class="metric-card" style="border-left-color: #198754; cursor: pointer;" onclick="setStatusFilter('completed')">
         <div class="title">Completed</div>
         <div class="val" id="metricCompleted" style="color: #198754;">0</div>
       </div>
-      <div class="metric-card" style="border-left-color: #dc3545;">
+      <div class="metric-card" style="border-left-color: #dc3545; cursor: pointer;" onclick="setStatusFilter('cancelled')">
         <div class="title">Cancelled</div>
         <div class="val" id="metricCancelled" style="color: #dc3545;">0</div>
       </div>
@@ -394,12 +410,21 @@
       }).join('');
     }
 
+    function setStatusFilter(status) {
+      const select = document.getElementById('statusFilterSelect');
+      if (select) {
+        select.value = status;
+      }
+      renderFilteredFeed();
+    }
+
     function renderFilteredFeed() {
       const container = document.getElementById('feedContainer');
       if (!container) return;
 
       const selectedHosp = document.getElementById('hospitalFilterSelect')?.value || 'all';
       const selectedDoc = document.getElementById('doctorFilterSelect')?.value || 'all';
+      const selectedStatus = document.getElementById('statusFilterSelect')?.value || 'all';
 
       let list = [...rawFeed];
 
@@ -411,8 +436,12 @@
         list = list.filter(a => String(a.doctorId?._id || a.doctorId) === String(selectedDoc));
       }
 
+      if (selectedStatus !== 'all') {
+        list = list.filter(a => (a.status || 'booked') === selectedStatus);
+      }
+
       if (list.length === 0) {
-        container.innerHTML = `<div style="text-align: center; padding: 3rem; color: #6c757d;">No booking records found for the selected hospital or doctor filters.</div>`;
+        container.innerHTML = `<div style="text-align: center; padding: 3rem; color: #6c757d;">No booking records found for the selected status, hospital, or doctor filters.</div>`;
         return;
       }
 

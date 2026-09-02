@@ -420,16 +420,43 @@ app.patch(["/api/doctor/appointments/:id/status", "/appointment-status/:id"], as
 
     if (isMongoConnected && mongoose.Types.ObjectId.isValid(id)) {
       const updated = await Appointment.findByIdAndUpdate(id, { status }, { new: true });
-      return res.json(updated);
+      if (updated && status === "cancelled" && updated.slot && updated.doctorId) {
+        const doctor = await Doctor.findById(updated.doctorId);
+        if (doctor) {
+          const parts = updated.slot.split(" ");
+          const date = parts[0];
+          const time = parts.slice(1).join(" ");
+          const slot = doctor.slots.find(s => s.date === date && s.time === time);
+          if (slot) {
+            slot.available = true;
+            await doctor.save();
+          }
+        }
+      }
+      syncStatusWithPatientApp(id, status);
+      return res.json(updated || { _id: id, status });
     }
 
     const appMem = memoryAppointments.find(a => String(a._id) === String(id));
     if (appMem) {
       appMem.status = status;
+      if (status === "cancelled" && appMem.slot && appMem.doctorId) {
+        const docId = appMem.doctorId?._id || appMem.doctorId;
+        const memDoctor = memoryDoctors.find(d => String(d._id) === String(docId));
+        if (memDoctor) {
+          const parts = appMem.slot.split(" ");
+          const date = parts[0];
+          const time = parts.slice(1).join(" ");
+          const slot = memDoctor.slots.find(s => s.date === date && s.time === time);
+          if (slot) slot.available = true;
+        }
+      }
+      syncStatusWithPatientApp(id, status);
       return res.json(appMem);
     }
 
-    res.status(404).json({ error: "Appointment not found" });
+    syncStatusWithPatientApp(id, status);
+    res.status(200).json({ _id: id, status });
   } catch (err) {
     res.status(500).json({ error: "Failed to update status" });
   }
@@ -450,6 +477,73 @@ app.post("/api/sync-appointment", (req, res) => {
     res.status(500).json({ error: e.message });
   }
 });
+
+// Sync status from patient booking portal
+app.post(["/api/sync-status", "/api/sync-appointment-status"], async (req, res) => {
+  try {
+    const { id, status } = req.body;
+    if (!id || !status) return res.status(400).json({ error: "id and status required" });
+
+    if (isMongoConnected && mongoose.Types.ObjectId.isValid(id)) {
+      const updated = await Appointment.findByIdAndUpdate(id, { status }, { new: true });
+      if (updated && status === "cancelled" && updated.slot && updated.doctorId) {
+        const doctor = await Doctor.findById(updated.doctorId);
+        if (doctor) {
+          const parts = updated.slot.split(" ");
+          const date = parts[0];
+          const time = parts.slice(1).join(" ");
+          const slot = doctor.slots.find(s => s.date === date && s.time === time);
+          if (slot) {
+            slot.available = true;
+            await doctor.save();
+          }
+        }
+      }
+    }
+
+    const appMem = memoryAppointments.find(a => String(a._id) === String(id));
+    if (appMem) {
+      appMem.status = status;
+      if (status === "cancelled" && appMem.slot && appMem.doctorId) {
+        const docId = appMem.doctorId?._id || appMem.doctorId;
+        const memDoctor = memoryDoctors.find(d => String(d._id) === String(docId));
+        if (memDoctor) {
+          const parts = appMem.slot.split(" ");
+          const date = parts[0];
+          const time = parts.slice(1).join(" ");
+          const slot = memDoctor.slots.find(s => s.date === date && s.time === time);
+          if (slot) slot.available = true;
+        }
+      }
+    }
+
+    res.json({ success: true, id, status });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+function syncStatusWithPatientApp(id, status) {
+  try {
+    const patientUrl = process.env.PATIENT_APP_URL || "https://health-connect-patient-booking.onrender.com";
+    const targetUrl = patientUrl.replace(/\/$/, '') + '/api/sync-status';
+    const client = targetUrl.startsWith('https') ? require('https') : require('http');
+    const data = JSON.stringify({ id, status });
+    const parsed = new (require('url').URL)(targetUrl);
+
+    const req = client.request(parsed, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(data)
+      },
+      timeout: 5000
+    }, () => {});
+    req.on('error', () => {});
+    req.write(data);
+    req.end();
+  } catch (e) {}
+}
 
 app.get("/api/db-status", (req, res) => {
   res.json({

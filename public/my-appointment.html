@@ -30,6 +30,15 @@
       font-size: 0.85rem;
     }
 
+    .badge-completed {
+      background: #d1e7dd;
+      color: #0f5132;
+      padding: 0.25rem 0.75rem;
+      border-radius: 20px;
+      font-weight: 700;
+      font-size: 0.85rem;
+    }
+
     .badge-cancelled {
       background: #fee2e2;
       color: #b91c1c;
@@ -119,6 +128,7 @@
     <div class="buttons" style="margin-bottom: 2rem;">
       <button onclick="setFilter('all')" id="tab-all" style="background: var(--primary);">All</button>
       <button onclick="setFilter('booked')" id="tab-booked" style="background: #64748b;">Active</button>
+      <button onclick="setFilter('completed')" id="tab-completed" style="background: #64748b;">Completed</button>
       <button onclick="setFilter('cancelled')" id="tab-cancelled" style="background: #64748b;">Cancelled</button>
     </div>
 
@@ -227,8 +237,40 @@ function renderAppointments() {
     const txnId = app.paymentTransactionId || "";
     const paymentMethod = app.paymentMethod || "UPI";
 
+    const statusBadgeHtml = status === 'completed'
+      ? '<span class="badge-completed">✓ Completed</span>'
+      : status === 'cancelled'
+      ? '<span class="badge-cancelled">❌ Cancelled</span>'
+      : '<span class="badge-booked">✅ Verified Booking</span>';
+
     const card = document.createElement("div");
     card.className = "appointment-card";
+
+    let actionsHtml = '';
+    if (status === 'booked') {
+      actionsHtml = `
+        ${paymentStatus !== 'paid' ? `
+          <button onclick="openPayModal('${app._id}', '${escapeQuotes(doctorName)}', '${escapeQuotes(app.slot)}')" style="background-color: var(--success); padding: 0.5rem 1rem; font-size: 0.875rem;">
+            💳 Pay via QR Code
+          </button>
+        ` : ''}
+        <button class="cancel-btn" onclick="cancelAppointment('${app._id}')" style="padding: 0.5rem 1rem; font-size: 0.875rem;">
+          Cancel Appointment
+        </button>
+      `;
+    } else if (status === 'cancelled') {
+      actionsHtml = `
+        <button onclick="rebookAppointment('${app._id}')" style="background-color: var(--primary); padding: 0.5rem 1rem; font-size: 0.875rem;">
+          🔄 Re-book Appointment
+        </button>
+      `;
+    } else if (status === 'completed') {
+      actionsHtml = `
+        <span style="color: #0f5132; background: #d1e7dd; padding: 0.5rem 1rem; border-radius: 8px; font-weight: 600; font-size: 0.875rem; display: inline-flex; align-items: center; gap: 0.4rem;">
+          ✓ Appointment Completed by Doctor
+        </span>
+      `;
+    }
 
     card.innerHTML = `
       <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 0.5rem;">
@@ -239,9 +281,7 @@ function renderAppointments() {
           ${txnId ? `<p style="margin-top: 0.25rem; font-size: 0.85rem; color: #475569;">🧾 <strong>Txn ID:</strong> <span style="font-family: monospace; color: #2563eb;">${txnId}</span> (${paymentMethod})</p>` : ''}
         </div>
         <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 0.4rem;">
-          <span class="${status === 'cancelled' ? 'badge-cancelled' : 'badge-booked'}">
-            ${status === 'cancelled' ? '❌ Cancelled' : '✅ Verified Booking'}
-          </span>
+          ${statusBadgeHtml}
           ${status !== 'cancelled' ? `
             <span class="${paymentStatus === 'paid' ? 'badge-paid' : 'badge-pending-pay'}">
               ${paymentStatus === 'paid' ? '💳 Payment Verified' : '⏳ Pending Payment'}
@@ -250,21 +290,8 @@ function renderAppointments() {
         </div>
       </div>
 
-      <div style="margin-top: 1.25rem; display: flex; gap: 0.75rem; flex-wrap: wrap;">
-        ${status === 'booked' ? `
-          ${paymentStatus !== 'paid' ? `
-            <button onclick="openPayModal('${app._id}', '${escapeQuotes(doctorName)}', '${escapeQuotes(app.slot)}')" style="background-color: var(--success); padding: 0.5rem 1rem; font-size: 0.875rem;">
-              💳 Pay via QR Code
-            </button>
-          ` : ''}
-          <button class="cancel-btn" onclick="cancelAppointment('${app._id}')" style="padding: 0.5rem 1rem; font-size: 0.875rem;">
-            Cancel Appointment
-          </button>
-        ` : `
-          <button onclick="rebookAppointment('${app._id}')" style="background-color: var(--primary); padding: 0.5rem 1rem; font-size: 0.875rem;">
-            🔄 Re-book Appointment
-          </button>
-        `}
+      <div style="margin-top: 1.25rem; display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center;">
+        ${actionsHtml}
       </div>
     `;
 
@@ -353,6 +380,7 @@ async function rebookAppointment(id) {
 }
 
 loadAppointments();
+setInterval(loadAppointments, 5000);
 </script>
 
 </body>
