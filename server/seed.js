@@ -12,7 +12,7 @@ const Appointment = require('./models/Appointment');
 
 const DIRECT_ATLAS_URI = "mongodb://myakalanagarjun_db_user:l6Z0tIMvmLBKA5s2@ac-jtvveox-shard-00-00.ohz6rw2.mongodb.net:27017,ac-jtvveox-shard-00-01.ohz6rw2.mongodb.net:27017,ac-jtvveox-shard-00-02.ohz6rw2.mongodb.net:27017/healthconnect?ssl=true&replicaSet=atlas-13oecy-shard-0&authSource=admin&retryWrites=true&w=majority";
 const ATLAS_URI = "mongodb+srv://myakalanagarjun_db_user:l6Z0tIMvmLBKA5s2@health-connect-hub.ohz6rw2.mongodb.net/healthconnect?retryWrites=true&w=majority&appName=Health-Connect-Hub";
-const MONGO_URI = process.env.MONGO_URI || DIRECT_ATLAS_URI;
+const MONGO_URI = process.env.MONGODB_URI || process.env.MONGO_URI || ATLAS_URI;
 
 const seedHospitals = [
   {

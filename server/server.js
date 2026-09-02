@@ -435,6 +435,31 @@ app.patch(["/api/doctor/appointments/:id/status", "/appointment-status/:id"], as
   }
 });
 
+// Sync incoming appointment from patient booking portal
+app.post("/api/sync-appointment", (req, res) => {
+  try {
+    const appointment = req.body;
+    if (appointment && appointment._id) {
+      const exists = memoryAppointments.some(a => String(a._id) === String(appointment._id));
+      if (!exists) {
+        memoryAppointments.unshift(appointment);
+      }
+    }
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.get("/api/db-status", (req, res) => {
+  res.json({
+    connected: isMongoConnected,
+    database: mongoose.connection.name || null,
+    host: mongoose.connection.host || null,
+    readyState: mongoose.connection.readyState
+  });
+});
+
 // Used UTR Tracker (Prevents reusing the same UTR multiple times)
 const usedUtrNumbers = new Set();
 
