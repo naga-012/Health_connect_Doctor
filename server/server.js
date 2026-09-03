@@ -161,7 +161,7 @@ const memoryUsers = [
     _id: "66123456789abcdef0123456",
     name: "Nagarjun Myakala",
     email: "myakalanagarjun09@gmail.com",
-    passwordHash: "$2b$10$rE.AIzWy2nv.mwfDLkket.Lw0bF2onl3RM82agwwIgJIsYwWxYh1S" // naga@012
+    passwordHash: "naga@012" // naga@012
   }
 ];
 
@@ -416,10 +416,13 @@ app.get(["/api/doctor/appointments", "/doctor-appointments"], async (req, res) =
 app.patch(["/api/doctor/appointments/:id/status", "/appointment-status/:id"], async (req, res) => {
   try {
     const { id } = req.params;
-    const { status } = req.body;
+    const { status, cancelledBy } = req.body;
+    const whoCancelled = cancelledBy || (status === "cancelled" ? "Doctor" : "");
 
     if (isMongoConnected && mongoose.Types.ObjectId.isValid(id)) {
-      const updated = await Appointment.findByIdAndUpdate(id, { status }, { new: true });
+      const updateData = { status };
+      if (whoCancelled) updateData.cancelledBy = whoCancelled;
+      const updated = await Appointment.findByIdAndUpdate(id, updateData, { new: true });
       if (updated && status === "cancelled" && updated.slot && updated.doctorId) {
         const doctor = await Doctor.findById(updated.doctorId);
         if (doctor) {
@@ -433,13 +436,14 @@ app.patch(["/api/doctor/appointments/:id/status", "/appointment-status/:id"], as
           }
         }
       }
-      syncStatusWithPatientApp(id, status);
-      return res.json(updated || { _id: id, status });
+      syncStatusWithPatientApp(id, status, whoCancelled);
+      return res.json(updated || { _id: id, status, cancelledBy: whoCancelled });
     }
 
     const appMem = memoryAppointments.find(a => String(a._id) === String(id));
     if (appMem) {
       appMem.status = status;
+      if (whoCancelled) appMem.cancelledBy = whoCancelled;
       if (status === "cancelled" && appMem.slot && appMem.doctorId) {
         const docId = appMem.doctorId?._id || appMem.doctorId;
         const memDoctor = memoryDoctors.find(d => String(d._id) === String(docId));
@@ -451,12 +455,12 @@ app.patch(["/api/doctor/appointments/:id/status", "/appointment-status/:id"], as
           if (slot) slot.available = true;
         }
       }
-      syncStatusWithPatientApp(id, status);
+      syncStatusWithPatientApp(id, status, whoCancelled);
       return res.json(appMem);
     }
 
-    syncStatusWithPatientApp(id, status);
-    res.status(200).json({ _id: id, status });
+    syncStatusWithPatientApp(id, status, whoCancelled);
+    res.status(200).json({ _id: id, status, cancelledBy: whoCancelled });
   } catch (err) {
     res.status(500).json({ error: "Failed to update status" });
   }
@@ -481,11 +485,13 @@ app.post("/api/sync-appointment", (req, res) => {
 // Sync status from patient booking portal
 app.post(["/api/sync-status", "/api/sync-appointment-status"], async (req, res) => {
   try {
-    const { id, status } = req.body;
+    const { id, status, cancelledBy } = req.body;
     if (!id || !status) return res.status(400).json({ error: "id and status required" });
 
     if (isMongoConnected && mongoose.Types.ObjectId.isValid(id)) {
-      const updated = await Appointment.findByIdAndUpdate(id, { status }, { new: true });
+      const updateData = { status };
+      if (cancelledBy) updateData.cancelledBy = cancelledBy;
+      const updated = await Appointment.findByIdAndUpdate(id, updateData, { new: true });
       if (updated && status === "cancelled" && updated.slot && updated.doctorId) {
         const doctor = await Doctor.findById(updated.doctorId);
         if (doctor) {
@@ -504,6 +510,7 @@ app.post(["/api/sync-status", "/api/sync-appointment-status"], async (req, res) 
     const appMem = memoryAppointments.find(a => String(a._id) === String(id));
     if (appMem) {
       appMem.status = status;
+      if (cancelledBy) appMem.cancelledBy = cancelledBy;
       if (status === "cancelled" && appMem.slot && appMem.doctorId) {
         const docId = appMem.doctorId?._id || appMem.doctorId;
         const memDoctor = memoryDoctors.find(d => String(d._id) === String(docId));
@@ -517,18 +524,18 @@ app.post(["/api/sync-status", "/api/sync-appointment-status"], async (req, res) 
       }
     }
 
-    res.json({ success: true, id, status });
+    res.json({ success: true, id, status, cancelledBy });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
 });
 
-function syncStatusWithPatientApp(id, status) {
+function syncStatusWithPatientApp(id, status, cancelledBy) {
   try {
     const patientUrl = process.env.PATIENT_APP_URL || "https://health-connect-patient-booking.onrender.com";
     const targetUrl = patientUrl.replace(/\/$/, '') + '/api/sync-status';
     const client = targetUrl.startsWith('https') ? require('https') : require('http');
-    const data = JSON.stringify({ id, status });
+    const data = JSON.stringify({ id, status, cancelledBy: cancelledBy || "" });
     const parsed = new (require('url').URL)(targetUrl);
 
     const req = client.request(parsed, {
@@ -538,11 +545,11 @@ function syncStatusWithPatientApp(id, status) {
         'Content-Length': Buffer.byteLength(data)
       },
       timeout: 5000
-    }, () => {});
-    req.on('error', () => {});
+    }, () => { });
+    req.on('error', () => { });
     req.write(data);
     req.end();
-  } catch (e) {}
+  } catch (e) { }
 }
 
 app.get("/api/db-status", (req, res) => {

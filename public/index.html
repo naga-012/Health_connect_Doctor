@@ -457,16 +457,23 @@
         const userContact = a.userId?.email || a.userEmail || 'myakalanagarjun09@gmail.com';
         const utr = a.paymentTransactionId || 'UTR-N/A';
 
+        const whoCancelled = a.cancelledBy ? ` (by ${a.cancelledBy})` : '';
         const statusBadge = a.status === 'completed'
           ? '<span class="badge badge-completed">✓ Completed</span>'
           : a.status === 'cancelled'
-          ? '<span class="badge badge-cancelled">✕ Cancelled</span>'
+          ? `<span class="badge badge-cancelled">✕ Cancelled${whoCancelled}</span>`
           : '<span class="badge badge-booked">● Active Booked</span>';
 
         const actionsHtml = a.status === 'booked' ? `
           <div style="display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 0.5rem; border-top: 1px dashed #dee2e6; padding-top: 0.5rem;">
             <button class="btn-action btn-complete" onclick="changeStatus('${a._id}', 'completed')">✓ Mark Completed</button>
             <button class="btn-action btn-cancel" onclick="changeStatus('${a._id}', 'cancelled')">✕ Cancel & Release Slot</button>
+          </div>
+        ` : a.status === 'cancelled' ? `
+          <div style="display: flex; justify-content: flex-end; margin-top: 0.5rem; border-top: 1px dashed #dee2e6; padding-top: 0.5rem;">
+            <span style="color: #991b1b; background: #fee2e2; padding: 0.35rem 0.75rem; border-radius: 6px; font-weight: 700; font-size: 0.82rem;">
+              🚫 Cancelled by: ${a.cancelledBy || 'Patient'}
+            </span>
           </div>
         ` : '';
 
@@ -515,7 +522,7 @@
         const res = await fetch(`/appointment-status/${id}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ status: newStatus })
+          body: JSON.stringify({ status: newStatus, cancelledBy: 'Doctor' })
         });
         const data = await res.json();
         if (res.ok) {
