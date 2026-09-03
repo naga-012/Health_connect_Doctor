@@ -21,6 +21,126 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// ================= NODEMAILER GMAIL TRANSPORTER =================
+const emailUser = process.env.EMAIL_USER || "myakalanagarjun09@gmail.com";
+let rawEmailPass = process.env.EMAIL_PASS || process.env.GMAIL_APP_PASSWORD || "icxlgpfluwssihjn";
+if (rawEmailPass.includes("btxs") || rawEmailPass.trim().length < 8) {
+  rawEmailPass = "icxlgpfluwssihjn";
+}
+const emailPass = rawEmailPass.replace(/\s+/g, "");
+
+const mailTransporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: emailUser,
+    pass: emailPass
+  }
+});
+
+// Verify mail transporter on startup
+mailTransporter.verify((err, success) => {
+  if (err) {
+    console.warn("⚠️ Doctor App Gmail Transporter Warning:", err.message);
+  } else {
+    console.log("📧 Doctor App Gmail Transporter Ready: Notifications will be sent to patients and myakalanagarjun09@gmail.com");
+  }
+});
+
+async function sendAppointmentConfirmationEmail(details) {
+  try {
+    const patientEmail = (details.patientEmail || "").trim();
+    const adminEmail = "myakalanagarjun09@gmail.com";
+    const primaryTo = (patientEmail && patientEmail.includes("@")) ? patientEmail : adminEmail;
+    const ccAdmin = (primaryTo !== adminEmail) ? adminEmail : undefined;
+    const recipientsDisplay = ccAdmin ? `${primaryTo}, ${ccAdmin}` : primaryTo;
+
+    const mailOptions = {
+      from: `"HealthConnect Hub" <${emailUser}>`,
+      to: primaryTo,
+      cc: ccAdmin,
+      subject: `Appointment Confirmed: ${details.doctorName} (${details.slot})`,
+      text: `Dear ${details.patientName || "Patient"},\n\nYour appointment with ${details.doctorName} (${details.specialty || "General Medicine"}) at ${details.hospitalName || "Apollo Hospital"} on ${details.slot} has been successfully confirmed.\n\nFee: ₹${details.fee || 800}\nPayment Method: ${details.paymentMethod || "UPI QR"}\nUTR / Ref: ${details.transactionId || "N/A"}\nStatus: CONFIRMED & BOOKED\n\nHealthConnect Hub`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px; background: #ffffff;">
+          <div style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); padding: 24px; border-radius: 8px; text-align: center; color: #ffffff;">
+            <h2 style="margin: 0; color: #38bdf8; font-size: 22px;">HealthConnect Hub</h2>
+            <p style="margin: 6px 0 0 0; font-size: 14px; color: #94a3b8;">Official Appointment Confirmation</p>
+          </div>
+          <div style="padding: 24px 0;">
+            <p style="font-size: 16px; color: #1e293b; margin-top: 0;">Dear <strong>${details.patientName || "Patient"}</strong>,</p>
+            <p style="font-size: 14px; color: #475569; line-height: 1.5;">Your appointment consultation has been successfully confirmed!</p>
+            <div style="background: #f8fafc; border-left: 4px solid #2563eb; padding: 16px; border-radius: 6px; margin: 20px 0;">
+              <p style="margin: 8px 0; color: #334155; font-size: 14px;"><strong>👨‍⚕️ Doctor:</strong> ${details.doctorName}</p>
+              <p style="margin: 8px 0; color: #334155; font-size: 14px;"><strong>🩺 Specialty:</strong> ${details.specialty || "General Medicine"}</p>
+              <p style="margin: 8px 0; color: #334155; font-size: 14px;"><strong>🏥 Hospital:</strong> ${details.hospitalName || "Apollo Hospital"}</p>
+              <p style="margin: 8px 0; color: #334155; font-size: 14px;"><strong>💵 Fee:</strong> ₹${details.fee || 800}</p>
+              <p style="margin: 8px 0; color: #334155; font-size: 14px;"><strong>📅 Scheduled Slot:</strong> <span style="background: #e0f2fe; color: #0369a1; padding: 2px 8px; border-radius: 4px; font-weight: bold;">${details.slot}</span></p>
+              <p style="margin: 8px 0; color: #334155; font-size: 14px;"><strong>🔢 Transaction / UTR:</strong> <code>${details.transactionId || "N/A"}</code></p>
+              <p style="margin: 8px 0; color: #334155; font-size: 14px;"><strong>📌 Status:</strong> <span style="background: #dcfce7; color: #15803d; padding: 3px 8px; border-radius: 4px; font-weight: bold;">CONFIRMED & BOOKED ✅</span></p>
+            </div>
+            <p style="font-size: 13px; color: #64748b; line-height: 1.5;">Please arrive 15 minutes prior to your consultation time.</p>
+          </div>
+        </div>
+      `
+    };
+
+    if (emailPass) {
+      const info = await mailTransporter.sendMail(mailOptions);
+      console.log(`📧 [Doctor App] Confirmation email sent to: ${recipientsDisplay} (Message ID: ${info.messageId})`);
+    }
+  } catch (err) {
+    console.error("⚠️ [Doctor App] Nodemailer booking email failed:", err.message);
+  }
+}
+
+async function sendAppointmentStatusEmail(details) {
+  try {
+    const patientEmail = (details.patientEmail || "").trim();
+    const adminEmail = "myakalanagarjun09@gmail.com";
+    const primaryTo = (patientEmail && patientEmail.includes("@")) ? patientEmail : adminEmail;
+    const ccAdmin = (primaryTo !== adminEmail) ? adminEmail : undefined;
+    const recipientsDisplay = ccAdmin ? `${primaryTo}, ${ccAdmin}` : primaryTo;
+
+    const isCancelled = details.status === "cancelled";
+    const statusText = isCancelled ? "CANCELLED" : "COMPLETED";
+    const statusColor = isCancelled ? "#ef4444" : "#10b981";
+    const headerBg = isCancelled ? "linear-gradient(135deg, #7f1d1d 0%, #991b1b 100%)" : "linear-gradient(135deg, #064e3b 0%, #047857 100%)";
+
+    const mailOptions = {
+      from: `"HealthConnect Hub" <${emailUser}>`,
+      to: primaryTo,
+      cc: ccAdmin,
+      subject: `Appointment Status Update: ${statusText} - ${details.doctorName || "Doctor"} (${details.slot || ""})`,
+      text: `Dear ${details.patientName || "Patient"},\n\nYour appointment with ${details.doctorName || "Doctor"} on ${details.slot || ""} has been updated.\n\nStatus: ${statusText} (Updated by: ${details.updatedBy || "Doctor"})\n\nHealthConnect Hub`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px; background: #ffffff;">
+          <div style="background: ${headerBg}; padding: 20px; border-radius: 8px; text-align: center; color: #ffffff;">
+            <h2 style="margin: 0; color: #ffffff; font-size: 20px;">HealthConnect Hub</h2>
+            <p style="margin: 4px 0 0 0; font-size: 13px; color: #e2e8f0;">Appointment Status Update</p>
+          </div>
+          <div style="padding: 20px 0;">
+            <p style="font-size: 15px; color: #1e293b;">Dear <strong>${details.patientName || "Patient"}</strong>,</p>
+            <p style="font-size: 14px; color: #475569; line-height: 1.5;">Your appointment consultation status has been updated to <strong>${statusText}</strong>.</p>
+            <div style="background: #f8fafc; border-left: 4px solid ${statusColor}; padding: 14px; border-radius: 6px; margin: 16px 0;">
+              <p style="margin: 6px 0; color: #334155; font-size: 14px;"><strong>👨‍⚕️ Doctor:</strong> ${details.doctorName || "Doctor"}</p>
+              <p style="margin: 6px 0; color: #334155; font-size: 14px;"><strong>📅 Scheduled Slot:</strong> ${details.slot || "N/A"}</p>
+              <p style="margin: 6px 0; color: #334155; font-size: 14px;"><strong>📌 New Status:</strong> <span style="color: ${statusColor}; font-weight: bold;">${statusText}</span> (Updated by: ${details.updatedBy || "Doctor"})</p>
+            </div>
+            <p style="font-size: 13px; color: #64748b;">You can log in to your patient portal to view complete appointment history.</p>
+          </div>
+        </div>
+      `
+    };
+
+    if (emailPass) {
+      await mailTransporter.sendMail(mailOptions);
+      console.log(`📧 [Doctor App] Status update email (${statusText}) sent to: ${recipientsDisplay}`);
+    }
+  } catch (err) {
+    console.error("⚠️ [Doctor App] Nodemailer status update email failed:", err.message);
+  }
+}
+
 // Redirect root to doctor login page
 app.get('/', (req, res) => {
   res.redirect('/login.html');
@@ -636,6 +756,22 @@ app.patch(["/api/doctor/appointments/:id/status", "/appointment-status/:id"], as
           }
         }
       }
+      if (updated && (status === "cancelled" || status === "completed")) {
+        let docName = "Doctor";
+        try {
+          const doc = await Doctor.findById(updated.doctorId);
+          if (doc) docName = doc.name;
+        } catch (e) {}
+        sendAppointmentStatusEmail({
+          patientName: updated.patientName || updated.userName,
+          patientEmail: updated.patientEmail || updated.userEmail,
+          doctorName: docName,
+          slot: updated.slot,
+          status,
+          updatedBy: whoCancelled || "Doctor"
+        });
+      }
+
       syncStatusWithPatientApp(id, status, whoCancelled);
       return res.json(updated || { _id: id, status, cancelledBy: whoCancelled });
     }
@@ -655,6 +791,18 @@ app.patch(["/api/doctor/appointments/:id/status", "/appointment-status/:id"], as
           if (slot) slot.available = true;
         }
       }
+
+      if (status === "cancelled" || status === "completed") {
+        sendAppointmentStatusEmail({
+          patientName: appMem.patientName || appMem.userName,
+          patientEmail: appMem.patientEmail || appMem.userEmail,
+          doctorName: appMem.doctorId?.name || "Doctor",
+          slot: appMem.slot,
+          status,
+          updatedBy: whoCancelled || "Doctor"
+        });
+      }
+
       syncStatusWithPatientApp(id, status, whoCancelled);
       return res.json(appMem);
     }
@@ -775,8 +923,8 @@ const usedUtrNumbers = new Set();
 // ================= BOOK APPOINTMENT =================
 app.post("/book", async (req, res) => {
   try {
-    const { userId, doctorId, hospitalName, fee, date, time, paymentStatus, paymentMethod, paymentTransactionId } = req.body;
-    console.log("Received doctor-site booking request:", { userId, doctorId, hospitalName, fee, date, time, paymentStatus, paymentMethod, paymentTransactionId });
+    const { userId, doctorId, hospitalName, fee, date, time, paymentStatus, paymentMethod, paymentTransactionId, patientName, patientEmail, patientPhone } = req.body;
+    console.log("Received doctor-site booking request:", { userId, doctorId, hospitalName, fee, date, time, paymentStatus, paymentMethod, paymentTransactionId, patientName, patientEmail });
 
     const rawUtr = (paymentTransactionId || "").replace(/^UTR-/, "").trim();
 
@@ -823,9 +971,17 @@ app.post("/book", async (req, res) => {
           const actualFee = Number(fee) || doctor.consultationFee || 800;
           const actualHospital = hospitalName || (doctor.hospitals && doctor.hospitals[0]) || "Apollo Hospital";
 
+          const finalPatientName = patientName || "Patient";
+          const finalPatientEmail = (patientEmail && patientEmail.includes("@")) ? patientEmail : "myakalanagarjun09@gmail.com";
+
           const appointment = new Appointment({
             userId,
             doctorId: doctor._id,
+            patientName: finalPatientName,
+            patientEmail: finalPatientEmail,
+            patientPhone: patientPhone || "",
+            userName: finalPatientName,
+            userEmail: finalPatientEmail,
             hospitalName: actualHospital,
             fee: actualFee,
             slot: `${date} ${time}`,
@@ -837,6 +993,18 @@ app.post("/book", async (req, res) => {
           });
 
           await appointment.save();
+
+          sendAppointmentConfirmationEmail({
+            patientName: finalPatientName,
+            patientEmail: finalPatientEmail,
+            doctorName: doctor.name,
+            specialty: doctor.specialty,
+            hospitalName: actualHospital,
+            fee: actualFee,
+            slot: `${date} ${time}`,
+            transactionId: appointment.paymentTransactionId,
+            appointmentId: appointment._id
+          });
 
           return res.json({
             message: "Appointment Booked & Payment Verified Successfully! ✅",
@@ -863,11 +1031,18 @@ app.post("/book", async (req, res) => {
 
     const actualFee = Number(fee) || (memDoctor && memDoctor.consultationFee) || 800;
     const actualHospital = hospitalName || (memDoctor && memDoctor.hospitals && memDoctor.hospitals[0]) || "Apollo Hospital";
+    const finalPatientName = patientName || "Patient";
+    const finalPatientEmail = (patientEmail && patientEmail.includes("@")) ? patientEmail : "myakalanagarjun09@gmail.com";
 
     const newAppointment = {
       _id: "app_" + Date.now(),
       userId,
       doctorId: { _id: memDoctor._id, name: memDoctor.name, specialty: memDoctor.specialty, hospitals: [actualHospital], consultationFee: actualFee },
+      patientName: finalPatientName,
+      patientEmail: finalPatientEmail,
+      userName: finalPatientName,
+      userEmail: finalPatientEmail,
+      patientPhone: patientPhone || "",
       hospitalName: actualHospital,
       fee: actualFee,
       slot: `${date} ${time}`,
@@ -880,6 +1055,18 @@ app.post("/book", async (req, res) => {
     };
 
     memoryAppointments.push(newAppointment);
+
+    sendAppointmentConfirmationEmail({
+      patientName: finalPatientName,
+      patientEmail: finalPatientEmail,
+      doctorName: memDoctor.name,
+      specialty: memDoctor.specialty,
+      hospitalName: actualHospital,
+      fee: actualFee,
+      slot: `${date} ${time}`,
+      transactionId: newAppointment.paymentTransactionId,
+      appointmentId: newAppointment._id
+    });
 
     res.json({
       message: "Appointment Booked & Payment Verified Successfully! ✅",
