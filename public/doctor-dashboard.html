@@ -294,6 +294,8 @@
       }
 
       container.innerHTML = filteredList.map(a => {
+        const hospName = a.hospitalName || (a.doctorId?.hospitals && a.doctorId.hospitals[0]) || 'Apollo Hospital';
+        const docFee = a.fee || a.doctorId?.consultationFee || 800;
         const docName = a.doctorId?.name || a.doctorName || 'Doctor';
         const docSpec = a.doctorId?.specialty || a.specialty || 'Specialist';
         const userName = a.userId?.name || a.userName || 'Nagarjun Myakala';
@@ -324,6 +326,7 @@
           <div class="feed-card" style="border-left: 4px solid ${a.status === 'completed' ? '#198754' : a.status === 'cancelled' ? '#dc3545' : '#007bff'};">
             <div class="feed-header">
               <div>
+                <div style="color: #00b4d8; font-weight: 800; font-size: 0.85rem; margin-bottom: 0.25rem;">📍 HOSPITAL: ${hospName.toUpperCase()}</div>
                 <div class="patient-name">Patient: ${userName}</div>
                 <div style="font-size: 0.85rem; color: #6c757d;">Contact: ${userContact}</div>
               </div>
@@ -341,7 +344,7 @@
               </div>
               <div>
                 <span style="color: #6c757d; display: block; font-size: 0.75rem;">UPI PAYMENT STATUS</span>
-                <strong style="color: #198754;">Paid ₹${a.doctorId?.consultationFee || 800} (${a.paymentMethod || 'UPI QR'})</strong>
+                <strong style="color: #198754;">Paid ₹${docFee} (${a.paymentMethod || 'UPI QR'})</strong>
               </div>
               <div>
                 <span style="color: #6c757d; display: block; font-size: 0.75rem;">UTR REFERENCE NO.</span>

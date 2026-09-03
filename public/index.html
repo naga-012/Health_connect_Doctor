@@ -450,7 +450,8 @@
       }
 
       container.innerHTML = list.map(a => {
-        const hospName = getHospitalForAppt(a);
+        const hospName = a.hospitalName || getHospitalForAppt(a);
+        const docFee = a.fee || a.doctorId?.consultationFee || 800;
         const docName = a.doctorId?.name || a.doctorName || 'Dr. Doctor';
         const docSpec = a.doctorId?.specialty || a.specialty || 'Specialist';
         const userName = a.userId?.name || a.userName || 'Nagarjun Myakala';
@@ -499,7 +500,7 @@
               </div>
               <div>
                 <span style="color: #6c757d; display: block; font-size: 0.75rem; font-weight: 700;">UPI PAYMENT DETAILS</span>
-                <strong style="color: #198754;">Paid ₹${a.doctorId?.consultationFee || 800} (${a.paymentMethod || 'UPI QR'})</strong>
+                <strong style="color: #198754;">Paid ₹${docFee} (${a.paymentMethod || 'UPI QR'})</strong>
               </div>
               <div>
                 <span style="color: #6c757d; display: block; font-size: 0.75rem; font-weight: 700;">UTR REFERENCE NO.</span>

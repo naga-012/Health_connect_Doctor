@@ -421,7 +421,7 @@ app.get("/my-appointments/:userId", async (req, res) => {
 
     if (isMongoConnected && mongoose.Types.ObjectId.isValid(userId)) {
       try {
-        const appointments = await Appointment.find({ userId }).populate('doctorId', 'name specialty');
+        const appointments = await Appointment.find({ userId }).populate('doctorId', 'name specialty consultationFee hospitals');
         if (appointments) {
           return res.json(appointments);
         }
@@ -530,10 +530,18 @@ app.patch(["/api/doctor/appointments/:id/status", "/appointment-status/:id"], as
 });
 
 // Sync incoming appointment from patient booking portal
-app.post("/api/sync-appointment", (req, res) => {
+app.post("/api/sync-appointment", async (req, res) => {
   try {
     const appointment = req.body;
     if (appointment && appointment._id) {
+      if (isMongoConnected && mongoose.Types.ObjectId.isValid(appointment._id)) {
+        try {
+          const exists = await Appointment.findById(appointment._id);
+          if (!exists) {
+            await Appointment.create(appointment);
+          }
+        } catch (mErr) {}
+      }
       const exists = memoryAppointments.some(a => String(a._id) === String(appointment._id));
       if (!exists) {
         memoryAppointments.unshift(appointment);
@@ -630,8 +638,8 @@ const usedUtrNumbers = new Set();
 // ================= BOOK APPOINTMENT =================
 app.post("/book", async (req, res) => {
   try {
-    const { userId, doctorId, date, time, paymentStatus, paymentMethod, paymentTransactionId } = req.body;
-    console.log("Received booking request:", { userId, doctorId, date, time, paymentStatus, paymentMethod, paymentTransactionId });
+    const { userId, doctorId, hospitalName, fee, date, time, paymentStatus, paymentMethod, paymentTransactionId } = req.body;
+    console.log("Received doctor-site booking request:", { userId, doctorId, hospitalName, fee, date, time, paymentStatus, paymentMethod, paymentTransactionId });
 
     const rawUtr = (paymentTransactionId || "").replace(/^UTR-/, "").trim();
 
@@ -668,7 +676,6 @@ app.post("/book", async (req, res) => {
 
     if (isMongoConnected) {
       try {
-        const user = await User.findById(userId);
         const doctor = await Doctor.findById(doctorId);
 
         if (doctor) {
@@ -676,9 +683,14 @@ app.post("/book", async (req, res) => {
           if (slot) slot.available = false;
           await doctor.save();
 
+          const actualFee = Number(fee) || doctor.consultationFee || 800;
+          const actualHospital = hospitalName || (doctor.hospitals && doctor.hospitals[0]) || "Apollo Hospital";
+
           const appointment = new Appointment({
             userId,
             doctorId: doctor._id,
+            hospitalName: actualHospital,
+            fee: actualFee,
             slot: `${date} ${time}`,
             status: "booked",
             paymentStatus: paymentStatus || "paid",
@@ -697,6 +709,8 @@ app.post("/book", async (req, res) => {
             transactionId: appointment.paymentTransactionId,
             doctorName: doctor.name,
             specialty: doctor.specialty,
+            hospitalName: actualHospital,
+            fee: actualFee,
             slot: `${date} ${time}`
           });
         }
@@ -710,11 +724,15 @@ app.post("/book", async (req, res) => {
     const slot = memDoctor.slots.find(s => s.date === date && s.time === time);
     if (slot) slot.available = false;
 
+    const actualFee = Number(fee) || (memDoctor && memDoctor.consultationFee) || 800;
+    const actualHospital = hospitalName || (memDoctor && memDoctor.hospitals && memDoctor.hospitals[0]) || "Apollo Hospital";
+
     const newAppointment = {
       _id: "app_" + Date.now(),
       userId,
-      doctorId: { _id: memDoctor._id, name: memDoctor.name, specialty: memDoctor.specialty, hospitals: memDoctor.hospitals, consultationFee: memDoctor.consultationFee },
-      hospitalName: memDoctor.hospitals ? memDoctor.hospitals[0] : "Apollo Hospital",
+      doctorId: { _id: memDoctor._id, name: memDoctor.name, specialty: memDoctor.specialty, hospitals: [actualHospital], consultationFee: actualFee },
+      hospitalName: actualHospital,
+      fee: actualFee,
       slot: `${date} ${time}`,
       status: "booked",
       paymentStatus: paymentStatus || "paid",
@@ -734,6 +752,8 @@ app.post("/book", async (req, res) => {
       transactionId: newAppointment.paymentTransactionId,
       doctorName: memDoctor.name,
       specialty: memDoctor.specialty,
+      hospitalName: actualHospital,
+      fee: actualFee,
       slot: `${date} ${time}`
     });
 

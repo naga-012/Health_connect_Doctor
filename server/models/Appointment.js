@@ -12,6 +12,14 @@ const appointmentSchema = new mongoose.Schema(
       ref: "Doctor",
       required: true
     },
+    hospitalName: {
+      type: String,
+      default: "Apollo Hospital"
+    },
+    fee: {
+      type: Number,
+      default: 800
+    },
     slot: {
       type: String, // e.g. "2026-04-18 09:00-10:00"
       required: true
