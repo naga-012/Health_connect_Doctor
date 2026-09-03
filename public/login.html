@@ -72,7 +72,7 @@
 
     .input-wrapper input {
       width: 100%;
-      padding: 0.875rem 1rem 0.875rem 2.6rem;
+      padding: 0.875rem 1rem;
       border: 1.5px solid #cbd5e1;
       border-radius: 12px;
       font-size: 0.95rem;
@@ -87,14 +87,6 @@
       box-shadow: 0 0 0 4px rgba(0, 180, 216, 0.12);
     }
 
-    .input-icon {
-      position: absolute;
-      left: 0.9rem;
-      top: 50%;
-      transform: translateY(-50%);
-      font-size: 1.1rem;
-      color: #94a3b8;
-    }
 
     .auth-submit-btn {
       width: 100%;
@@ -146,7 +138,6 @@
       <div class="input-group">
         <label for="emailInput">Doctor Email Address</label>
         <div class="input-wrapper">
-          <span class="input-icon">✉️</span>
           <input type="email" id="emailInput" name="email" placeholder="doctor@hospital.com" required>
         </div>
       </div>
@@ -154,7 +145,6 @@
       <div class="input-group">
         <label for="passwordInput">Password</label>
         <div class="input-wrapper">
-          <span class="input-icon">🔒</span>
           <input type="password" id="passwordInput" name="password" placeholder="••••••••" required>
         </div>
       </div>
