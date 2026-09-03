@@ -165,7 +165,52 @@ const memoryUsers = [
   }
 ];
 
-const memoryAppointments = [];
+const memoryAppointments = [
+  {
+    _id: "app_hist_1",
+    userId: "u1",
+    patientEmail: "myakalanagarjun09@gmail.com",
+    patientName: "Nagarjun Myakala",
+    doctorId: {
+      _id: "d1",
+      name: "Dr. Anil Reddy",
+      specialty: "Orthopedics",
+      consultationFee: 800,
+      hospitals: ["Apollo Hospital"]
+    },
+    hospitalName: "Apollo Hospital",
+    fee: 800,
+    slot: `${getFutureDate(-7)} 10:30-11:30`,
+    status: "completed",
+    paymentStatus: "paid",
+    paymentMethod: "UPI QR",
+    paymentTransactionId: "TXN891240182",
+    createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+    expireAt: new Date(Date.now() + 358 * 24 * 60 * 60 * 1000)
+  },
+  {
+    _id: "app_hist_2",
+    userId: "u1",
+    patientEmail: "myakalanagarjun09@gmail.com",
+    patientName: "Nagarjun Myakala",
+    doctorId: {
+      _id: "d2",
+      name: "Dr. Priya Sharma",
+      specialty: "Pediatrics",
+      consultationFee: 700,
+      hospitals: ["Rainbow Children's Hospital"]
+    },
+    hospitalName: "Rainbow Children's Hospital",
+    fee: 700,
+    slot: `${getFutureDate(-2)} 11:00-12:00`,
+    status: "completed",
+    paymentStatus: "paid",
+    paymentMethod: "UPI QR",
+    paymentTransactionId: "TXN746193021",
+    createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
+    expireAt: new Date(Date.now() + 363 * 24 * 60 * 60 * 1000)
+  }
+];
 
 // ================= REGISTER =================
 app.post("/register", async (req, res) => {
@@ -369,7 +414,7 @@ function calculateExpiryDate(dateStr, timeStr) {
       // 1 YEAR (365 days) retention
       return new Date(slotEndTime.getTime() + (365 * 24 * 60 * 60 * 1000));
     }
-  } catch (e) {}
+  } catch (e) { }
   return new Date(Date.now() + (365 * 24 * 60 * 60 * 1000));
 }
 
@@ -379,7 +424,7 @@ async function cleanupExpiredAppointments() {
     const oneYearMs = 365 * 24 * 60 * 60 * 1000;
 
     const isExpiredAfterOneYear = (app) => {
-      if (app.expireAt && new Date(app.expireAt).getTime() <= now) return true;
+      // Only expire if older than 365 days (1 year)
       if (app.createdAt) {
         return (now - new Date(app.createdAt).getTime()) > oneYearMs;
       }
@@ -392,8 +437,9 @@ async function cleanupExpiredAppointments() {
           if (!isNaN(end.getTime())) {
             return now > (end.getTime() + oneYearMs);
           }
-        } catch (e) {}
+        } catch (e) { }
       }
+      if (app.expireAt && new Date(app.expireAt).getTime() <= (now - oneYearMs)) return true;
       return false;
     };
 
@@ -433,11 +479,21 @@ app.get(["/my-appointments/:userId", "/api/history/:userId", "/history/:userId"]
     if (isMongoConnected) {
       try {
         const conditions = [];
-        if (mongoose.Types.ObjectId.isValid(userId)) conditions.push({ userId });
-        if (userEmail) conditions.push({ patientEmail: userEmail });
+        if (mongoose.Types.ObjectId.isValid(userId)) {
+          conditions.push({ userId: new mongoose.Types.ObjectId(userId) });
+        } else if (userId && userId !== "undefined") {
+          conditions.push({ userId: String(userId) });
+        }
+        if (userEmail) {
+          const emailRegex = new RegExp(`^${userEmail.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
+          conditions.push({ patientEmail: emailRegex });
+          conditions.push({ userEmail: emailRegex });
+        }
 
         if (conditions.length > 0) {
-          apps = await Appointment.find({ $or: conditions }).populate('doctorId', 'name specialty consultationFee hospitals');
+          apps = await Appointment.find({ $or: conditions })
+            .populate('doctorId', 'name specialty consultationFee hospitals')
+            .sort({ createdAt: -1 });
         }
       } catch (e) {
         console.warn("Mongo appointments query failed:", e.message);
@@ -447,20 +503,58 @@ app.get(["/my-appointments/:userId", "/api/history/:userId", "/history/:userId"]
     if (!apps || apps.length === 0) {
       apps = memoryAppointments.filter(app => {
         const matchId = String(app.userId) === String(userId);
-        const matchEmail = userEmail && app.patientEmail && String(app.patientEmail).toLowerCase() === userEmail;
-        return matchId || matchEmail || (userId === "u1" || userEmail === "myakalanagarjun09@gmail.com");
+        const appEmail = String(app.patientEmail || app.userEmail || "").toLowerCase().trim();
+        const matchEmail = userEmail && appEmail === userEmail;
+        const defaultUser = (userId === "u1" || userEmail === "myakalanagarjun09@gmail.com" || !userEmail) &&
+                            (appEmail === "myakalanagarjun09@gmail.com" || String(app.userId) === "u1");
+        return matchId || matchEmail || defaultUser;
       });
     }
 
+    apps.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
     res.json(apps);
-
-    // Memory store fallback
-    const userApps = memoryAppointments.filter(app => String(app.userId) === String(userId));
-    res.json(userApps);
 
   } catch (err) {
     console.error("Error fetching appointments:", err);
     res.json(memoryAppointments);
+  }
+});
+
+// ================= DOCTOR SITE API: GET PATIENT CONSULTATION HISTORY =================
+app.get(["/api/doctor/patient-history/:patientEmail", "/patient-history/:patientEmail"], async (req, res) => {
+  try {
+    const rawEmail = decodeURIComponent(req.params.patientEmail || "").toLowerCase().trim();
+    const cleanEmail = rawEmail.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    let history = [];
+
+    if (isMongoConnected) {
+      try {
+        const emailRegex = new RegExp(`^${cleanEmail}$`, 'i');
+        history = await Appointment.find({
+          $or: [
+            { patientEmail: emailRegex },
+            { userEmail: emailRegex }
+          ]
+        })
+          .populate('doctorId', 'name specialty consultationFee hospitals')
+          .sort({ createdAt: -1 });
+      } catch (e) {
+        console.warn("Mongo patient history query failed:", e.message);
+      }
+    }
+
+    if (!history || history.length === 0) {
+      history = memoryAppointments.filter(app => {
+        const appEmail = String(app.patientEmail || app.userEmail || "").toLowerCase().trim();
+        return appEmail === rawEmail || rawEmail === "myakalanagarjun09@gmail.com" || !rawEmail;
+      });
+    }
+
+    history.sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+    res.json(history);
+  } catch (err) {
+    console.error("Error fetching patient history:", err);
+    res.status(500).json({ error: "Failed to fetch patient history" });
   }
 });
 
@@ -583,7 +677,7 @@ app.post("/api/sync-appointment", async (req, res) => {
           if (!exists) {
             await Appointment.create(appointment);
           }
-        } catch (mErr) {}
+        } catch (mErr) { }
       }
       const exists = memoryAppointments.some(a => String(a._id) === String(appointment._id));
       if (!exists) {

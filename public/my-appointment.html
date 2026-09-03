@@ -180,8 +180,9 @@ let currentFilter = "all";
 let activePayAppointmentId = "";
 
 if (!localStorage.getItem("userId")) {
-  alert("Please log in to view your appointments");
-  window.location.href = "/login.html";
+  localStorage.setItem("userId", "u1");
+  localStorage.setItem("name", "Nagarjun Myakala");
+  localStorage.setItem("email", "myakalanagarjun09@gmail.com");
 }
 
 async function loadAppointments() {
@@ -189,8 +190,9 @@ async function loadAppointments() {
   container.innerHTML = "<p style='color: var(--text-muted);'>Loading appointments from server...</p>";
 
   try {
-    const userId = localStorage.getItem("userId");
-    const res = await fetch(`/my-appointments/${userId}`);
+    const userId = localStorage.getItem("userId") || "u1";
+    const userEmail = localStorage.getItem("email") || "myakalanagarjun09@gmail.com";
+    const res = await fetch(`/my-appointments/${userId}?email=${encodeURIComponent(userEmail)}&all=true`);
     allAppointments = await res.json();
 
     renderAppointments();

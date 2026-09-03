@@ -465,18 +465,20 @@
           ? `<span class="badge badge-cancelled">✕ Cancelled${whoCancelled}</span>`
           : '<span class="badge badge-booked">● Active Booked</span>';
 
-        const actionsHtml = a.status === 'booked' ? `
-          <div style="display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 0.5rem; border-top: 1px dashed #dee2e6; padding-top: 0.5rem;">
-            <button class="btn-action btn-complete" onclick="changeStatus('${a._id}', 'completed')">✓ Mark Completed</button>
-            <button class="btn-action btn-cancel" onclick="changeStatus('${a._id}', 'cancelled')">✕ Cancel & Release Slot</button>
+        const actionsHtml = `
+          <div style="display: flex; gap: 0.5rem; justify-content: flex-end; align-items: center; margin-top: 0.5rem; border-top: 1px dashed #dee2e6; padding-top: 0.5rem; flex-wrap: wrap;">
+            ${a.status === 'cancelled' && a.cancelledBy ? `
+              <span style="color: #991b1b; background: #fee2e2; padding: 0.35rem 0.75rem; border-radius: 6px; font-weight: 700; font-size: 0.82rem; margin-right: auto;">
+                🚫 Cancelled by: ${a.cancelledBy}
+              </span>
+            ` : ''}
+            ${a.status === 'booked' ? `
+              <button class="btn-action btn-complete" onclick="changeStatus('${a._id}', 'completed')">✓ Mark Completed</button>
+              <button class="btn-action btn-cancel" onclick="changeStatus('${a._id}', 'cancelled')">✕ Cancel & Release Slot</button>
+            ` : ''}
+            <button class="btn-action" style="background: #0284c7; color: white;" onclick="openPatientHistoryModal('${userContact}', '${userName}')">📜 Patient History</button>
           </div>
-        ` : a.status === 'cancelled' ? `
-          <div style="display: flex; justify-content: flex-end; margin-top: 0.5rem; border-top: 1px dashed #dee2e6; padding-top: 0.5rem;">
-            <span style="color: #991b1b; background: #fee2e2; padding: 0.35rem 0.75rem; border-radius: 6px; font-weight: 700; font-size: 0.82rem;">
-              🚫 Cancelled by: ${a.cancelledBy || 'Patient'}
-            </span>
-          </div>
-        ` : '';
+        `;
 
         return `
           <div class="feed-card" style="border-left: 4px solid ${a.status === 'completed' ? '#198754' : a.status === 'cancelled' ? '#dc3545' : '#007bff'};">
@@ -533,6 +535,81 @@
         }
       } catch (err) {
         alert('Network error updating status.');
+      }
+    }
+
+    async function openPatientHistoryModal(patientEmail, patientName) {
+      let modal = document.getElementById('doctorHistoryModal');
+      if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'doctorHistoryModal';
+        modal.style.cssText = 'position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(15,23,42,0.7); backdrop-filter:blur(4px); display:flex; align-items:center; justify-content:center; z-index:9999; padding:1rem;';
+        modal.innerHTML = `
+          <div style="background:white; border-radius:16px; width:100%; max-width:750px; max-height:85vh; overflow-y:auto; padding:1.5rem; box-shadow:0 25px 50px -12px rgba(0,0,0,0.25); text-align:left;">
+            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #e2e8f0; padding-bottom:0.75rem; margin-bottom:1rem;">
+              <div>
+                <h3 style="margin:0; font-size:1.3rem; color:#0f172a;">📜 Patient Consultation History</h3>
+                <p style="margin:0.2rem 0 0 0; color:#64748b; font-size:0.88rem;" id="docModalPatientSubtitle">Patient: --</p>
+              </div>
+              <button onclick="document.getElementById('doctorHistoryModal').style.display='none'" style="background:#e2e8f0; border:none; padding:0.4rem 0.8rem; border-radius:8px; font-weight:700; cursor:pointer; font-size:1rem; color:#475569;">✕</button>
+            </div>
+            <div id="docModalContent">
+              <p style="color:#64748b;">Loading history records...</p>
+            </div>
+          </div>
+        `;
+        document.body.appendChild(modal);
+      }
+
+      document.getElementById('docModalPatientSubtitle').textContent = `Patient: ${patientName} (${patientEmail})`;
+      const content = document.getElementById('docModalContent');
+      content.innerHTML = '<p style="color:#64748b; text-align:center; padding:1.5rem;">Loading consultation history from database...</p>';
+      modal.style.display = 'flex';
+
+      try {
+        const res = await fetch(`/api/doctor/patient-history/${encodeURIComponent(patientEmail)}`);
+        const history = await res.json();
+
+        if (!history || history.length === 0) {
+          content.innerHTML = '<p style="color:#64748b; text-align:center; padding:1.5rem;">No previous consultation records found for this patient.</p>';
+          return;
+        }
+
+        content.innerHTML = `
+          <div style="overflow-x:auto;">
+            <table style="width:100%; border-collapse:collapse; font-size:0.88rem;">
+              <thead>
+                <tr style="background:#f1f5f9; text-align:left; border-bottom:2px solid #cbd5e1;">
+                  <th style="padding:10px;">Date & Slot</th>
+                  <th style="padding:10px;">Doctor / Specialty</th>
+                  <th style="padding:10px;">Hospital</th>
+                  <th style="padding:10px;">Fee / UTR</th>
+                  <th style="padding:10px;">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${history.map(h => {
+                  const docName = h.doctorId?.name || h.doctorName || 'Doctor';
+                  const spec = h.doctorId?.specialty || h.specialty || 'General';
+                  const hosp = h.hospitalName || (h.doctorId?.hospitals && h.doctorId.hospitals[0]) || 'Apollo Hospital';
+                  const st = h.status || 'booked';
+                  const stColor = st === 'completed' ? '#16a34a' : st === 'cancelled' ? '#dc2626' : '#2563eb';
+                  return `
+                    <tr style="border-bottom:1px solid #e2e8f0;">
+                      <td style="padding:10px;"><strong>${h.slot || 'N/A'}</strong><br><small style="color:#64748b;">${new Date(h.createdAt || Date.now()).toLocaleDateString()}</small></td>
+                      <td style="padding:10px;"><strong>${docName}</strong><br><small style="color:#64748b;">${spec}</small></td>
+                      <td style="padding:10px; color:#0284c7; font-weight:600;">${hosp}</td>
+                      <td style="padding:10px;"><strong>₹${h.fee || 800}</strong><br><small style="font-family:monospace; color:#2563eb;">${h.paymentTransactionId || 'N/A'}</small></td>
+                      <td style="padding:10px;"><span style="color:${stColor}; font-weight:700; text-transform:uppercase; font-size:0.8rem;">${st}</span></td>
+                    </tr>
+                  `;
+                }).join('')}
+              </tbody>
+            </table>
+          </div>
+        `;
+      } catch (err) {
+        content.innerHTML = '<p style="color:#dc2626; text-align:center; padding:1.5rem;">Failed to fetch consultation records.</p>';
       }
     }
   </script>
