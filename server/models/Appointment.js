@@ -12,6 +12,26 @@ const appointmentSchema = new mongoose.Schema(
       ref: "Doctor",
       required: true
     },
+    patientName: {
+      type: String,
+      default: "Nagarjun Myakala"
+    },
+    patientEmail: {
+      type: String,
+      default: "myakalanagarjun09@gmail.com"
+    },
+    patientPhone: {
+      type: String,
+      default: "+91 9121792433"
+    },
+    userName: {
+      type: String,
+      default: "Nagarjun Myakala"
+    },
+    userEmail: {
+      type: String,
+      default: "myakalanagarjun09@gmail.com"
+    },
     hospitalName: {
       type: String,
       default: "Apollo Hospital"

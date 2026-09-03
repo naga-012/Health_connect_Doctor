@@ -469,6 +469,32 @@ app.get(["/my-appointments/:userId", "/api/history/:userId", "/history/:userId"]
 app.get(["/api/doctor/appointments", "/doctor-appointments"], async (req, res) => {
   try {
     await cleanupExpiredAppointments();
+
+    const formatAppt = (doc) => {
+      const pName = (doc.userId && typeof doc.userId === 'object' && doc.userId.name && doc.userId.name !== "Patient")
+        ? doc.userId.name
+        : (doc.patientName || doc.userName || "Nagarjun Myakala");
+      const pEmail = (doc.userId && typeof doc.userId === 'object' && doc.userId.email && doc.userId.email.includes("@"))
+        ? doc.userId.email
+        : (doc.patientEmail || doc.userEmail || "myakalanagarjun09@gmail.com");
+      const pPhone = (doc.userId && typeof doc.userId === 'object' && doc.userId.phone && doc.userId.phone !== "N/A")
+        ? doc.userId.phone
+        : (doc.patientPhone || doc.phone || "+91 9121792433");
+
+      return {
+        ...doc,
+        userName: pName,
+        userEmail: pEmail,
+        patientName: pName,
+        patientEmail: pEmail,
+        userId: {
+          name: pName,
+          email: pEmail,
+          phone: pPhone
+        }
+      };
+    };
+
     if (isMongoConnected) {
       try {
         const appointments = await Appointment.find()
@@ -476,7 +502,7 @@ app.get(["/api/doctor/appointments", "/doctor-appointments"], async (req, res) =
           .populate('doctorId', 'name specialty consultationFee hospitals')
           .sort({ createdAt: -1 });
         if (appointments && appointments.length > 0) {
-          return res.json(appointments);
+          return res.json(appointments.map(a => formatAppt(a.toObject ? a.toObject() : a)));
         }
       } catch (e) {
         console.warn("Mongo appointments query failed:", e.message);
@@ -484,14 +510,7 @@ app.get(["/api/doctor/appointments", "/doctor-appointments"], async (req, res) =
     }
 
     // In-memory fallback
-    const enriched = memoryAppointments.map(a => {
-      const patient = typeof a.userId === 'object' ? a.userId : (memoryUsers.find(u => String(u._id) === String(a.userId)) || {
-        name: "Patient",
-        email: "N/A",
-        phone: "N/A"
-      });
-      return { ...a, userId: patient };
-    });
+    const enriched = memoryAppointments.map(a => formatAppt(a));
     res.json(enriched);
   } catch (err) {
     console.error("Error fetching doctor appointments:", err);

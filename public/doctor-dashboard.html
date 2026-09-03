@@ -298,8 +298,8 @@
         const docFee = a.fee || a.doctorId?.consultationFee || 800;
         const docName = a.doctorId?.name || a.doctorName || 'Doctor';
         const docSpec = a.doctorId?.specialty || a.specialty || 'Specialist';
-        const userName = a.userId?.name || a.userName || 'Nagarjun Myakala';
-        const userContact = a.userId?.email || a.userEmail || 'myakalanagarjun09@gmail.com';
+        const userName = (a.userId?.name && a.userId.name !== 'Patient') ? a.userId.name : (a.patientName || a.userName || 'Nagarjun Myakala');
+        const userContact = (a.userId?.email && a.userId.email !== 'N/A') ? a.userId.email : (a.patientEmail || a.userEmail || 'myakalanagarjun09@gmail.com');
         const utr = a.paymentTransactionId || 'UTR-N/A';
 
         const whoCancelled = a.cancelledBy ? ` (by ${a.cancelledBy})` : '';
