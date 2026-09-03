@@ -52,30 +52,6 @@
       line-height: 1.4;
     }
 
-    .demo-banner {
-      background: #eff6ff;
-      border: 1px solid #bfdbfe;
-      border-radius: 14px;
-      padding: 0.875rem;
-      margin-bottom: 1.5rem;
-      font-size: 0.85rem;
-      color: #1e40af;
-      text-align: left;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .demo-btn {
-      background: #2563eb;
-      color: #ffffff;
-      border: none;
-      padding: 0.35rem 0.75rem;
-      border-radius: 8px;
-      font-size: 0.775rem;
-      font-weight: 600;
-      cursor: pointer;
-    }
 
     .input-group {
       text-align: left;
@@ -166,15 +142,6 @@
       Patient login is disabled. Only registered Doctors & Hospital Administrators can log in to access live patient booking details.
     </div>
 
-    <!-- Quick Doctor Autofill Demo Banner -->
-    <div class="demo-banner">
-      <div>
-        <strong>👨‍⚕️ Doctor Demo Account</strong>
-        <div style="font-size: 0.775rem; color: #3b82f6;">myakalanagarjun09@gmail.com</div>
-      </div>
-      <button class="demo-btn" onclick="autofillDoctorDemo()">Auto-fill</button>
-    </div>
-
     <form id="loginForm">
       <div class="input-group">
         <label for="emailInput">Doctor Email Address</label>
@@ -205,10 +172,6 @@
 const form = document.getElementById("loginForm");
 const btn = document.getElementById("loginBtn");
 
-function autofillDoctorDemo() {
-  document.getElementById("emailInput").value = "myakalanagarjun09@gmail.com";
-  document.getElementById("passwordInput").value = "Password123!";
-}
 
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -246,7 +209,7 @@ form.addEventListener("submit", async (e) => {
     alert("Doctor Authentication Successful ✅ Welcome to Hospital-Wise Booking Details!");
 
     // Redirect to Hospital-Wise Booking Details Homepage
-    window.location.href = "/";
+    window.location.href = "index.html";
 
   } catch (err) {
     console.error("Login error:", err);

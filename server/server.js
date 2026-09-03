@@ -21,9 +21,9 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Serve main live appointments feed portal on root URL
+// Redirect root to doctor login page
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, '../public/index.html'));
+  res.redirect('/login.html');
 });
 
 app.use(express.static(path.join(__dirname, '../public')));

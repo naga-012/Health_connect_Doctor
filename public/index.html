@@ -198,7 +198,7 @@
     </div>
 
     <nav class="nav-links">
-      <a href="/" class="active">🏥 Hospital-Wise Booking Details</a>
+      <a href="index.html" class="active">🏥 Hospital-Wise Booking Details</a>
       <a href="doctor-dashboard.html">👨‍⚕️ Doctor Dashboard</a>
       <a href="my-appointment.html">📋 My Bookings</a>
       <a href="login.html" id="loginLink">Doctor Login</a>
@@ -328,17 +328,21 @@
     ];
 
     document.addEventListener('DOMContentLoaded', () => {
-      // Check login status
-      if (localStorage.getItem('userId')) {
-        const loginLink = document.getElementById('loginLink');
-        if (loginLink) {
-          loginLink.textContent = 'Logout';
-          loginLink.href = '#';
-          loginLink.onclick = () => {
-            localStorage.removeItem('userId');
-            window.location.reload();
-          };
-        }
+      // Strict authentication check: Doctor must be logged in
+      if (!localStorage.getItem('userId')) {
+        window.location.replace('login.html');
+        return;
+      }
+
+      const loginLink = document.getElementById('loginLink');
+      if (loginLink) {
+        loginLink.textContent = '🚪 Logout';
+        loginLink.href = '#';
+        loginLink.onclick = (e) => {
+          e.preventDefault();
+          localStorage.clear();
+          window.location.replace('login.html');
+        };
       }
 
       fetchFeed();
