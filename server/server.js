@@ -317,13 +317,16 @@ app.get("/hospitals", async (req, res) => {
 // ================= DOCTOR SEARCH =================
 app.get("/doctors", async (req, res) => {
   try {
-    const hospital = req.query.hospital;
+    const rawHospital = (req.query.hospital || "").trim();
 
     if (isMongoConnected) {
       try {
         let doctors;
-        if (hospital) {
-          doctors = await Doctor.find({ hospitals: hospital }).sort({ name: 1 });
+        if (rawHospital && rawHospital.toLowerCase() !== "all" && rawHospital.toLowerCase() !== "all hospitals") {
+          const escaped = rawHospital.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          doctors = await Doctor.find({
+            hospitals: { $regex: new RegExp(escaped, "i") }
+          }).sort({ name: 1 });
         } else {
           doctors = await Doctor.find().sort({ name: 1 });
         }
@@ -337,11 +340,17 @@ app.get("/doctors", async (req, res) => {
 
     // Memory store fallback
     let filtered = memoryDoctors;
-    if (hospital) {
+    if (rawHospital && rawHospital.toLowerCase() !== "all" && rawHospital.toLowerCase() !== "all hospitals") {
+      const q = rawHospital.toLowerCase();
       filtered = memoryDoctors.filter(d =>
-        d.hospitals.some(h => h.toLowerCase() === hospital.toLowerCase())
+        d.hospitals.some(h => h.toLowerCase().includes(q) || q.includes(h.toLowerCase()))
       );
-      if (filtered.length === 0) filtered = memoryDoctors;
+      if (filtered.length === 0) {
+        filtered = memoryDoctors.map(d => ({
+          ...d,
+          hospitals: [rawHospital, ...d.hospitals]
+        }));
+      }
     }
     res.json(filtered);
 
