@@ -827,8 +827,26 @@ app.post("/rebook-appointment/:id", async (req, res) => {
 // ================= SERVER LISTEN & VERCEL EXPORT =================
 const PORT = process.env.PORT || 3001;
 if (require.main === module) {
-  app.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
+  const os = require('os');
+  const getLocalIp = () => {
+    const interfaces = os.networkInterfaces();
+    for (const name of Object.keys(interfaces)) {
+      for (const iface of interfaces[name]) {
+        if (iface.family === 'IPv4' && !iface.internal) {
+          return iface.address;
+        }
+      }
+    }
+    return 'localhost';
+  };
+
+  app.listen(PORT, '0.0.0.0', () => {
+    const localIp = getLocalIp();
+    console.log(`==================================================`);
+    console.log(`🚀 Doctor App is running!`);
+    console.log(`💻 PC / Local Web:    http://localhost:${PORT}`);
+    console.log(`📱 Mobile Phone App: http://${localIp}:${PORT}`);
+    console.log(`==================================================`);
   });
 }
 
