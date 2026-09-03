@@ -352,10 +352,72 @@ app.get("/doctors", async (req, res) => {
 });
 
 
+function calculateExpiryDate(dateStr, timeStr) {
+  try {
+    const timePart = timeStr ? (timeStr.split("-")[1] || timeStr.split("-")[0]) : "23:59";
+    const slotEndTime = new Date(`${dateStr}T${timePart}:00`);
+    if (!isNaN(slotEndTime.getTime())) {
+      // 1 day (24 hours) after the appointment slot
+      return new Date(slotEndTime.getTime() + (24 * 60 * 60 * 1000));
+    }
+  } catch (e) {}
+  return new Date(Date.now() + (24 * 60 * 60 * 1000));
+}
+
+async function cleanupExpiredAppointments() {
+  try {
+    const now = Date.now();
+    const oneDayMs = 24 * 60 * 60 * 1000;
+
+    const isExpired = (app) => {
+      if (app.expireAt && new Date(app.expireAt).getTime() <= now) return true;
+      if (app.slot) {
+        try {
+          const parts = String(app.slot).trim().split(" ");
+          const dPart = parts[0];
+          const tPart = parts[1] ? (parts[1].split("-")[1] || parts[1].split("-")[0]) : "23:59";
+          const end = new Date(`${dPart}T${tPart}:00`);
+          if (!isNaN(end.getTime())) {
+            return now > (end.getTime() + oneDayMs);
+          }
+        } catch (e) {}
+      }
+      if (app.createdAt) {
+        return (now - new Date(app.createdAt).getTime()) > oneDayMs;
+      }
+      return false;
+    };
+
+    if (isMongoConnected) {
+      const allApps = await Appointment.find();
+      for (const a of allApps) {
+        if (isExpired(a)) {
+          await Appointment.findByIdAndDelete(a._id);
+          console.log(`🧹 [Doctor App] Auto-removed appointment older than 1 day: ${a._id}`);
+        }
+      }
+    }
+
+    for (let i = memoryAppointments.length - 1; i >= 0; i--) {
+      if (isExpired(memoryAppointments[i])) {
+        const removed = memoryAppointments.splice(i, 1)[0];
+        console.log(`🧹 [Doctor App] Auto-removed memory appointment older than 1 day: ${removed._id}`);
+      }
+    }
+  } catch (err) {
+    console.warn("Doctor app cleanup notice:", err.message);
+  }
+}
+
+// Auto-cleanup every 15 minutes and on startup
+setInterval(cleanupExpiredAppointments, 15 * 60 * 1000);
+setTimeout(cleanupExpiredAppointments, 3000);
+
 // ================= GET USER APPOINTMENTS =================
 app.get("/my-appointments/:userId", async (req, res) => {
   try {
     const { userId } = req.params;
+    await cleanupExpiredAppointments();
 
     if (isMongoConnected && mongoose.Types.ObjectId.isValid(userId)) {
       try {
@@ -382,6 +444,7 @@ app.get("/my-appointments/:userId", async (req, res) => {
 // ================= DOCTOR SITE API: GET ALL APPOINTMENTS =================
 app.get(["/api/doctor/appointments", "/doctor-appointments"], async (req, res) => {
   try {
+    await cleanupExpiredAppointments();
     if (isMongoConnected) {
       try {
         const appointments = await Appointment.find()
@@ -620,7 +683,8 @@ app.post("/book", async (req, res) => {
             status: "booked",
             paymentStatus: paymentStatus || "paid",
             paymentMethod: paymentMethod || "UPI QR",
-            paymentTransactionId: txnId
+            paymentTransactionId: txnId,
+            expireAt: calculateExpiryDate(date, time)
           });
 
           await appointment.save();
@@ -656,7 +720,8 @@ app.post("/book", async (req, res) => {
       paymentStatus: paymentStatus || "paid",
       paymentMethod: paymentMethod || "UPI QR",
       paymentTransactionId: txnId,
-      createdAt: new Date()
+      createdAt: new Date(),
+      expireAt: calculateExpiryDate(date, time)
     };
 
     memoryAppointments.push(newAppointment);

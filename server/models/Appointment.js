@@ -37,6 +37,10 @@ const appointmentSchema = new mongoose.Schema(
     paymentTransactionId: {
       type: String,
       default: ""
+    },
+    expireAt: {
+      type: Date,
+      index: { expires: 0 }
     }
   },
   { timestamps: true }
