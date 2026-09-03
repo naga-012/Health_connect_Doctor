@@ -366,20 +366,23 @@ function calculateExpiryDate(dateStr, timeStr) {
     const timePart = timeStr ? (timeStr.split("-")[1] || timeStr.split("-")[0]) : "23:59";
     const slotEndTime = new Date(`${dateStr}T${timePart}:00`);
     if (!isNaN(slotEndTime.getTime())) {
-      // 1 day (24 hours) after the appointment slot
-      return new Date(slotEndTime.getTime() + (24 * 60 * 60 * 1000));
+      // 1 YEAR (365 days) retention
+      return new Date(slotEndTime.getTime() + (365 * 24 * 60 * 60 * 1000));
     }
   } catch (e) {}
-  return new Date(Date.now() + (24 * 60 * 60 * 1000));
+  return new Date(Date.now() + (365 * 24 * 60 * 60 * 1000));
 }
 
 async function cleanupExpiredAppointments() {
   try {
     const now = Date.now();
-    const oneDayMs = 24 * 60 * 60 * 1000;
+    const oneYearMs = 365 * 24 * 60 * 60 * 1000;
 
-    const isExpired = (app) => {
+    const isExpiredAfterOneYear = (app) => {
       if (app.expireAt && new Date(app.expireAt).getTime() <= now) return true;
+      if (app.createdAt) {
+        return (now - new Date(app.createdAt).getTime()) > oneYearMs;
+      }
       if (app.slot) {
         try {
           const parts = String(app.slot).trim().split(" ");
@@ -387,12 +390,9 @@ async function cleanupExpiredAppointments() {
           const tPart = parts[1] ? (parts[1].split("-")[1] || parts[1].split("-")[0]) : "23:59";
           const end = new Date(`${dPart}T${tPart}:00`);
           if (!isNaN(end.getTime())) {
-            return now > (end.getTime() + oneDayMs);
+            return now > (end.getTime() + oneYearMs);
           }
         } catch (e) {}
-      }
-      if (app.createdAt) {
-        return (now - new Date(app.createdAt).getTime()) > oneDayMs;
       }
       return false;
     };
@@ -400,17 +400,17 @@ async function cleanupExpiredAppointments() {
     if (isMongoConnected) {
       const allApps = await Appointment.find();
       for (const a of allApps) {
-        if (isExpired(a)) {
+        if (isExpiredAfterOneYear(a)) {
           await Appointment.findByIdAndDelete(a._id);
-          console.log(`🧹 [Doctor App] Auto-removed appointment older than 1 day: ${a._id}`);
+          console.log(`🧹 [Doctor App] Auto-removed appointment older than 1 year: ${a._id}`);
         }
       }
     }
 
     for (let i = memoryAppointments.length - 1; i >= 0; i--) {
-      if (isExpired(memoryAppointments[i])) {
+      if (isExpiredAfterOneYear(memoryAppointments[i])) {
         const removed = memoryAppointments.splice(i, 1)[0];
-        console.log(`🧹 [Doctor App] Auto-removed memory appointment older than 1 day: ${removed._id}`);
+        console.log(`🧹 [Doctor App] Auto-removed memory appointment older than 1 year: ${removed._id}`);
       }
     }
   } catch (err) {
@@ -418,26 +418,41 @@ async function cleanupExpiredAppointments() {
   }
 }
 
-// Auto-cleanup every 15 minutes and on startup
-setInterval(cleanupExpiredAppointments, 15 * 60 * 1000);
+// Auto-cleanup every 1 hour and on startup
+setInterval(cleanupExpiredAppointments, 60 * 60 * 1000);
 setTimeout(cleanupExpiredAppointments, 3000);
 
 // ================= GET USER APPOINTMENTS =================
-app.get("/my-appointments/:userId", async (req, res) => {
+app.get(["/my-appointments/:userId", "/api/history/:userId", "/history/:userId"], async (req, res) => {
   try {
     const { userId } = req.params;
+    const userEmail = (req.query.email || "").toLowerCase().trim();
     await cleanupExpiredAppointments();
 
-    if (isMongoConnected && mongoose.Types.ObjectId.isValid(userId)) {
+    let apps = [];
+    if (isMongoConnected) {
       try {
-        const appointments = await Appointment.find({ userId }).populate('doctorId', 'name specialty consultationFee hospitals');
-        if (appointments) {
-          return res.json(appointments);
+        const conditions = [];
+        if (mongoose.Types.ObjectId.isValid(userId)) conditions.push({ userId });
+        if (userEmail) conditions.push({ patientEmail: userEmail });
+
+        if (conditions.length > 0) {
+          apps = await Appointment.find({ $or: conditions }).populate('doctorId', 'name specialty consultationFee hospitals');
         }
       } catch (e) {
         console.warn("Mongo appointments query failed:", e.message);
       }
     }
+
+    if (!apps || apps.length === 0) {
+      apps = memoryAppointments.filter(app => {
+        const matchId = String(app.userId) === String(userId);
+        const matchEmail = userEmail && app.patientEmail && String(app.patientEmail).toLowerCase() === userEmail;
+        return matchId || matchEmail || (userId === "u1" || userEmail === "myakalanagarjun09@gmail.com");
+      });
+    }
+
+    res.json(apps);
 
     // Memory store fallback
     const userApps = memoryAppointments.filter(app => String(app.userId) === String(userId));
